@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm -v)",
+      "Bash(npm install *)",
+      "Bash(npx prisma *)",
+      "WebFetch(domain:pris.ly)",
+      "WebFetch(domain:www.prisma.io)",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(curl -s --max-time 90 http://localhost:3001/api/data -o r1.json -w '[HTTP %{http_code}]\\\\n')",
+      "Bash(node -e \"const d=require\\('./r1.json'\\);console.log\\('todos:',d.todos.length,'| branches:',d.branches.length,'| logs:',d.logs.length,'| b1.history:',d.branches.find\\(b=>b.id=='b1'\\).history.length,'| first todo:',d.todos[0].id\\)\")",
+      "Bash(curl -s --max-time 60 'http://localhost:3001/api/todos?status=review&pageSize=5' -o r2.json -w '[HTTP %{http_code}]\\\\n')",
+      "Bash(node -e \"const d=require\\('./r2.json'\\);console.log\\('data:',d.data.length,'| pagination:',JSON.stringify\\(d.pagination\\)\\)\")",
+      "Bash(curl -s --max-time 60 'http://localhost:3001/api/branches?env=uat&pageSize=50' -o r3.json -w '[HTTP %{http_code}]\\\\n')",
+      "Bash(curl -s --max-time 60 -X PUT http://localhost:3001/api/branches/b1 -H \"Content-Type: application/json\" -d '{\"envPromotion\":{\"env\":\"dev\",\"value\":true}}' -o err.html -w \"[HTTP %{http_code}]\\\\n\")",
+      "Bash(curl -s --max-time 60 http://localhost:3001/api/branches/b1 -o g.json -w '[HTTP %{http_code}]\\\\n')",
+      "Bash(curl -s --max-time 60 -X PUT http://localhost:3001/api/branches/b1 -H 'Content-Type: application/json' -d '{\"statusUpdate\":\"PR Open\"}' -o s.json -w '[HTTP %{http_code}]\\\\n')",
+      "Bash(curl -s --max-time 60 -X PUT http://localhost:3001/api/branches/b1 -H 'Content-Type: application/json' -d '{\"updates\":{\"impact\":\"changed impact\"}}' -o u.json -w '[HTTP %{http_code}]\\\\n')"
+    ]
+  }
+}

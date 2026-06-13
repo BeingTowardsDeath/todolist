@@ -1,0 +1,748 @@
+{
+  "todos": [
+    {
+      "id": "k7l3orqfn",
+      "title": "Test Backend API integration",
+      "description": "Testing the backend API integration for branch promotions.",
+      "category": "dev",
+      "priority": "medium",
+      "status": "todo",
+      "branchId": "lkm38p67i",
+      "dueDate": "2026-06-02",
+      "createdAt": "2026-06-03T14:09:35.269Z"
+    },
+    {
+      "id": "t1",
+      "title": "SonarQube Quality Gate integration",
+      "description": "Ensure Sonar scan runs on pull request triggers and reports blocks.",
+      "category": "dev",
+      "priority": "medium",
+      "status": "in-progress",
+      "branchId": "b1",
+      "dueDate": "2026-06-10",
+      "createdAt": "2026-06-02T13:40:00Z"
+    },
+    {
+      "id": "t2",
+      "title": "Preserve Search Filters state",
+      "description": "Save search filters in sessionStorage/localStorage so they persist on refresh.",
+      "category": "dev",
+      "priority": "high",
+      "status": "review",
+      "branchId": "b2",
+      "dueDate": "2026-06-05",
+      "createdAt": "2026-06-02T13:41:00Z"
+    },
+    {
+      "id": "t3",
+      "title": "KARE federation base refactoring",
+      "description": "Reorganize federation core libraries for modular scaling.",
+      "category": "dev",
+      "priority": "critical",
+      "status": "review",
+      "branchId": "b3",
+      "dueDate": "2026-06-04",
+      "createdAt": "2026-06-02T13:42:00Z"
+    },
+    {
+      "id": "t4",
+      "title": "Holiday Pay Multiplier rules integration",
+      "description": "Implement calculation matrices for weekend and public holiday multipliers.",
+      "category": "dev",
+      "priority": "high",
+      "status": "todo",
+      "branchId": "b10",
+      "dueDate": "2026-06-15",
+      "createdAt": "2026-06-02T13:43:00Z"
+    },
+    {
+      "id": "t5",
+      "title": "Community Admins Redesign & Renaming",
+      "description": "Remove deprecated renaming structures from the admin dashboard configurations.",
+      "category": "dev",
+      "priority": "medium",
+      "status": "todo",
+      "branchId": "b7",
+      "dueDate": "2026-06-12",
+      "createdAt": "2026-06-02T13:44:00Z"
+    },
+    {
+      "id": "t6",
+      "title": "Verify market sync parameters",
+      "description": "Validate sync states for products in nodes 31039 through 31043.",
+      "category": "dev",
+      "priority": "low",
+      "status": "backlog",
+      "branchId": "b11",
+      "dueDate": "2026-06-25",
+      "createdAt": "2026-06-02T13:45:00Z"
+    },
+    {
+      "id": "t7",
+      "title": "Buy ergonomic mesh office chair",
+      "description": "Compare Herman Miller Aeron and Steelcase Gesture models. Purchase for home office.",
+      "category": "shopping",
+      "priority": "medium",
+      "status": "todo",
+      "branchId": null,
+      "dueDate": "2026-06-20",
+      "createdAt": "2026-06-02T13:46:00Z"
+    },
+    {
+      "id": "t8",
+      "title": "Read Rust async/await chapter",
+      "description": "Finish the Async Book and implement a simple TCP echo server in Tokio.",
+      "category": "learning",
+      "priority": "high",
+      "status": "in-progress",
+      "branchId": null,
+      "dueDate": "2026-06-08",
+      "createdAt": "2026-06-02T13:47:00Z"
+    },
+    {
+      "id": "t9",
+      "title": "Gym Session: Push Day workout",
+      "description": "Bench press, overhead shoulder press, incline dumbbell fly, and tricep extensions.",
+      "category": "workout",
+      "priority": "low",
+      "status": "todo",
+      "branchId": null,
+      "dueDate": "2026-06-02",
+      "createdAt": "2026-06-02T13:48:00Z"
+    },
+    {
+      "id": "t10",
+      "title": "Renew driver license",
+      "description": "Prepare documents and visit DMV or do online renewal portal validation.",
+      "category": "personal",
+      "priority": "high",
+      "status": "backlog",
+      "branchId": null,
+      "dueDate": "2026-07-01",
+      "createdAt": "2026-06-02T13:49:00Z"
+    }
+  ],
+  "branches": [
+    {
+      "id": "b1",
+      "name": "sprint24/sonarqube",
+      "impact": "SonarQube analysis setup and pipeline gate definition.",
+      "base": "prod",
+      "dev": true,
+      "qa": true,
+      "uat": false,
+      "pro": false,
+      "status": "Testing",
+      "type": "Task",
+      "history": [
+        {
+          "id": "h-init-b1",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Created branch",
+          "details": "Created off base: prod"
+        },
+        {
+          "id": "h-dev-b1",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to DEV",
+          "details": "Initial status loaded from dev environment"
+        },
+        {
+          "id": "h-qa-b1",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to QA",
+          "details": "Initial status loaded from qa environment"
+        }
+      ]
+    },
+    {
+      "id": "b2",
+      "name": "sprint28/story/24735",
+      "impact": "Preserve the last used search filters upon interface reload or refresh.",
+      "base": "prod",
+      "dev": true,
+      "qa": true,
+      "uat": true,
+      "pro": false,
+      "status": "Approved",
+      "type": "Story",
+      "history": [
+        {
+          "id": "h-init-b2",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Created branch",
+          "details": "Created off base: prod"
+        },
+        {
+          "id": "h-dev-b2",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to DEV",
+          "details": "Initial status loaded from dev environment"
+        },
+        {
+          "id": "h-qa-b2",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to QA",
+          "details": "Initial status loaded from qa environment"
+        },
+        {
+          "id": "h-uat-b2",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to UAT",
+          "details": "Initial status loaded from uat environment"
+        }
+      ]
+    },
+    {
+      "id": "b3",
+      "name": "sprint35/story/fedration",
+      "impact": "kare core refactoring",
+      "base": "master",
+      "dev": true,
+      "qa": true,
+      "uat": true,
+      "pro": false,
+      "status": "Approved",
+      "type": "Story",
+      "history": [
+        {
+          "id": "h-init-b3",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Created branch",
+          "details": "Created off base: master"
+        },
+        {
+          "id": "h-dev-b3",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to DEV",
+          "details": "Initial status loaded from dev environment"
+        },
+        {
+          "id": "h-qa-b3",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to QA",
+          "details": "Initial status loaded from qa environment"
+        },
+        {
+          "id": "h-uat-b3",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to UAT",
+          "details": "Initial status loaded from uat environment"
+        }
+      ]
+    },
+    {
+      "id": "b4",
+      "name": "sprint35/story/integrationV2",
+      "impact": "integration v2版本，跳kare",
+      "base": "master",
+      "dev": true,
+      "qa": true,
+      "uat": true,
+      "pro": false,
+      "status": "Approved",
+      "type": "Story",
+      "history": [
+        {
+          "id": "h-init-b4",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Created branch",
+          "details": "Created off base: master"
+        },
+        {
+          "id": "h-dev-b4",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to DEV",
+          "details": "Initial status loaded from dev environment"
+        },
+        {
+          "id": "h-qa-b4",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to QA",
+          "details": "Initial status loaded from qa environment"
+        },
+        {
+          "id": "h-uat-b4",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to UAT",
+          "details": "Initial status loaded from uat environment"
+        }
+      ]
+    },
+    {
+      "id": "b5",
+      "name": "sprint35/story/fedration_V2",
+      "impact": "联合分支",
+      "base": "master",
+      "dev": true,
+      "qa": true,
+      "uat": true,
+      "pro": false,
+      "status": "Approved",
+      "type": "Story",
+      "history": [
+        {
+          "id": "h-init-b5",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Created branch",
+          "details": "Created off base: master"
+        },
+        {
+          "id": "h-dev-b5",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to DEV",
+          "details": "Initial status loaded from dev environment"
+        },
+        {
+          "id": "h-qa-b5",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to QA",
+          "details": "Initial status loaded from qa environment"
+        },
+        {
+          "id": "h-uat-b5",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to UAT",
+          "details": "Initial status loaded from uat environment"
+        }
+      ]
+    },
+    {
+      "id": "b6",
+      "name": "merge_24735_25736",
+      "impact": "Not Enrolled Scheduled Employee Changes. 和刷新保存状态",
+      "base": "master",
+      "dev": true,
+      "qa": true,
+      "uat": true,
+      "pro": false,
+      "status": "Approved",
+      "type": "Bug",
+      "history": [
+        {
+          "id": "h-init-b6",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Created branch",
+          "details": "Created off base: master"
+        },
+        {
+          "id": "h-dev-b6",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to DEV",
+          "details": "Initial status loaded from dev environment"
+        },
+        {
+          "id": "h-qa-b6",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to QA",
+          "details": "Initial status loaded from qa environment"
+        },
+        {
+          "id": "h-uat-b6",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to UAT",
+          "details": "Initial status loaded from uat environment"
+        }
+      ]
+    },
+    {
+      "id": "b7",
+      "name": "sprint36/story/28244",
+      "impact": "Remove Community Renaming and Remapping from Community Admins",
+      "base": "master",
+      "dev": true,
+      "qa": true,
+      "uat": true,
+      "pro": false,
+      "status": "Approved",
+      "history": [
+        {
+          "id": "h-init-b7",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Created branch",
+          "details": "Created off base: master"
+        },
+        {
+          "id": "h-dev-b7",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to DEV",
+          "details": "Initial status loaded from dev environment"
+        },
+        {
+          "id": "h-qa-b7",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to QA",
+          "details": "Initial status loaded from qa environment"
+        },
+        {
+          "id": "h-uat-b7",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to UAT",
+          "details": "Initial status loaded from uat environment"
+        }
+      ]
+    },
+    {
+      "id": "b8",
+      "name": "sprint37/story/28242",
+      "impact": "KARE Integration Logging",
+      "base": "master",
+      "dev": true,
+      "qa": true,
+      "uat": true,
+      "pro": false,
+      "status": "Approved",
+      "history": [
+        {
+          "id": "h-init-b8",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Created branch",
+          "details": "Created off base: master"
+        },
+        {
+          "id": "h-dev-b8",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to DEV",
+          "details": "Initial status loaded from dev environment"
+        },
+        {
+          "id": "h-qa-b8",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to QA",
+          "details": "Initial status loaded from qa environment"
+        },
+        {
+          "id": "h-uat-b8",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to UAT",
+          "details": "Initial status loaded from uat environment"
+        }
+      ]
+    },
+    {
+      "id": "b9",
+      "name": "sprint37/sorty/sonerqube",
+      "impact": "代码扫描最新",
+      "base": "master",
+      "dev": true,
+      "qa": true,
+      "uat": false,
+      "pro": false,
+      "status": "Testing",
+      "history": [
+        {
+          "id": "h-init-b9",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Created branch",
+          "details": "Created off base: master"
+        },
+        {
+          "id": "h-dev-b9",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to DEV",
+          "details": "Initial status loaded from dev environment"
+        },
+        {
+          "id": "h-qa-b9",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to QA",
+          "details": "Initial status loaded from qa environment"
+        }
+      ]
+    },
+    {
+      "id": "b10",
+      "name": "sprint42/story/holidayPay",
+      "impact": "Holiday Pay Multiplier rules integration",
+      "base": "master",
+      "dev": true,
+      "qa": true,
+      "uat": true,
+      "pro": false,
+      "status": "Approved",
+      "history": [
+        {
+          "id": "h-init-b10",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Created branch",
+          "details": "Created off base: master"
+        },
+        {
+          "id": "h-dev-b10",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to DEV",
+          "details": "Initial status loaded from dev environment"
+        },
+        {
+          "id": "h-qa-b10",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to QA",
+          "details": "Initial status loaded from qa environment"
+        },
+        {
+          "id": "h-uat-b10",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to UAT",
+          "details": "Initial status loaded from uat environment"
+        }
+      ]
+    },
+    {
+      "id": "b11",
+      "name": "sprint26-1/story/market",
+      "impact": "Market items sync (31039, 31040, 31041, 31042, 31043)",
+      "base": "sprint35/story/fedration_V2",
+      "dev": true,
+      "qa": true,
+      "uat": true,
+      "pro": false,
+      "status": "Approved",
+      "history": [
+        {
+          "id": "h-init-b11",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Created branch",
+          "details": "Created off base: sprint35/story/fedration_V2"
+        },
+        {
+          "id": "h-dev-b11",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to DEV",
+          "details": "Initial status loaded from dev environment"
+        },
+        {
+          "id": "h-qa-b11",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to QA",
+          "details": "Initial status loaded from qa environment"
+        },
+        {
+          "id": "h-uat-b11",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to UAT",
+          "details": "Initial status loaded from uat environment"
+        }
+      ]
+    },
+    {
+      "id": "b12",
+      "name": "sprint26-2/story/30531",
+      "impact": "KARE Permissions in NASTI",
+      "base": "sprint35/story/fedration_V2",
+      "dev": true,
+      "qa": true,
+      "uat": true,
+      "pro": false,
+      "status": "Approved",
+      "history": [
+        {
+          "id": "h-init-b12",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Created branch",
+          "details": "Created off base: sprint35/story/fedration_V2"
+        },
+        {
+          "id": "h-dev-b12",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to DEV",
+          "details": "Initial status loaded from dev environment"
+        },
+        {
+          "id": "h-qa-b12",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to QA",
+          "details": "Initial status loaded from qa environment"
+        },
+        {
+          "id": "h-uat-b12",
+          "timestamp": "2026-06-03T14:08:27.549Z",
+          "action": "Promoted to UAT",
+          "details": "Initial status loaded from uat environment"
+        }
+      ]
+    },
+    {
+      "id": "lkm38p67i",
+      "name": "sprint43/story/api-test",
+      "impact": "Test Backend API integration",
+      "base": "master",
+      "dev": true,
+      "qa": true,
+      "uat": true,
+      "pro": false,
+      "status": "Approved",
+      "history": [
+        {
+          "id": "h-coq5d827m",
+          "timestamp": "2026-06-03T14:09:35.269Z",
+          "action": "Created branch",
+          "details": "Created dynamically off master from linked task: \"Test Backend API integration\""
+        },
+        {
+          "id": "h-coa9brild",
+          "timestamp": "2026-06-03T14:12:44.617Z",
+          "action": "Promoted to DEV",
+          "details": "Promoted via environment checkbox. (Status updated to Testing)"
+        },
+        {
+          "id": "h-d04lsens2",
+          "timestamp": "2026-06-03T14:12:49.916Z",
+          "action": "Promoted to QA",
+          "details": "Promoted via environment checkbox."
+        },
+        {
+          "id": "h-8hi1l5nui",
+          "timestamp": "2026-06-03T14:12:54.007Z",
+          "action": "Promoted to UAT",
+          "details": "Promoted via environment checkbox. (Status updated to Approved)"
+        }
+      ]
+    }
+  ],
+  "logs": [
+    {
+      "id": "l1",
+      "timestamp": "13:46:01",
+      "type": "info",
+      "text": "Docker daemon status: OK, running 12 container instances."
+    },
+    {
+      "id": "l2",
+      "timestamp": "13:46:03",
+      "type": "info",
+      "text": "Kubernetes cluster connected: k8s-pro-cluster.namespaces: default, qa, uat."
+    },
+    {
+      "id": "427aa6ob0",
+      "timestamp": "22:09:35",
+      "type": "command",
+      "text": "git checkout -b sprint43/story/api-test"
+    },
+    {
+      "id": "8swwjavsf",
+      "timestamp": "22:09:35",
+      "type": "success",
+      "text": "Created local branch 'sprint43/story/api-test' off 'master'."
+    },
+    {
+      "id": "gr3ity7n3",
+      "timestamp": "22:09:35",
+      "type": "info",
+      "text": "Linked task: \"Test Backend API integration\" automatically to 'sprint43/story/api-test'."
+    },
+    {
+      "id": "l4m0w715d",
+      "timestamp": "22:09:35",
+      "type": "info",
+      "text": "Task created [DEV]: \"Test Backend API integration\" [Priority: MEDIUM]"
+    },
+    {
+      "id": "7s37i9hk1",
+      "timestamp": "22:12:44",
+      "type": "command",
+      "text": "deploy-tool promote --branch sprint43/story/api-test --env DEV"
+    },
+    {
+      "id": "h21ivradk",
+      "timestamp": "22:12:44",
+      "type": "info",
+      "text": "Checking out 'develop'..."
+    },
+    {
+      "id": "ahwd6tl5n",
+      "timestamp": "22:12:44",
+      "type": "info",
+      "text": "Merging 'sprint43/story/api-test' into 'develop'..."
+    },
+    {
+      "id": "rn8r62gb5",
+      "timestamp": "22:12:44",
+      "type": "success",
+      "text": "DEV build triggered: image: gcr.io/kare-dev/sprint43-story-api-test:latest"
+    },
+    {
+      "id": "bhwbzc6bd",
+      "timestamp": "22:12:44",
+      "type": "success",
+      "text": "DEV deploy OK. Pod running on node: dev-kube-node-3"
+    },
+    {
+      "id": "x3g35avv4",
+      "timestamp": "22:12:49",
+      "type": "command",
+      "text": "deploy-tool promote --branch sprint43/story/api-test --env QA"
+    },
+    {
+      "id": "6a4d91nok",
+      "timestamp": "22:12:49",
+      "type": "info",
+      "text": "Checking out 'qa'..."
+    },
+    {
+      "id": "2o8hmxk5p",
+      "timestamp": "22:12:49",
+      "type": "info",
+      "text": "Merging 'sprint43/story/api-test' into 'qa'..."
+    },
+    {
+      "id": "gcrd9ltzi",
+      "timestamp": "22:12:49",
+      "type": "info",
+      "text": "Running integration tests and Sonar scans..."
+    },
+    {
+      "id": "xu6cymwu7",
+      "timestamp": "22:12:49",
+      "type": "success",
+      "text": "Sonar Gate: PASSED (Quality rating A)."
+    },
+    {
+      "id": "8gqil44dq",
+      "timestamp": "22:12:49",
+      "type": "success",
+      "text": "QA Build success! Deployed to QA Kubernetes cluster (Namespace: qa)."
+    },
+    {
+      "id": "21b7uiown",
+      "timestamp": "22:12:54",
+      "type": "command",
+      "text": "deploy-tool promote --branch sprint43/story/api-test --env UAT"
+    },
+    {
+      "id": "gfjahtpg1",
+      "timestamp": "22:12:54",
+      "type": "info",
+      "text": "Initiating Release candidate verification..."
+    },
+    {
+      "id": "kh4to8tqd",
+      "timestamp": "22:12:54",
+      "type": "info",
+      "text": "Merging 'sprint43/story/api-test' into 'release/uat'..."
+    },
+    {
+      "id": "wd54ivk9d",
+      "timestamp": "22:12:54",
+      "type": "success",
+      "text": "UAT deployment completed. Accessible at https://uat.internal.kare-flow.com"
+    },
+    {
+      "id": "z4loezdqz",
+      "timestamp": "22:12:54",
+      "type": "warning",
+      "text": "Awaiting client / Product Owner acceptance verification."
+    },
+    {
+      "id": "txb4qeqpm",
+      "timestamp": "22:44:24",
+      "type": "info",
+      "text": "Task created [DEV]: \"22\" [Priority: MEDIUM]"
+    },
+    {
+      "id": "k08yh2nnf",
+      "timestamp": "22:44:34",
+      "type": "info",
+      "text": "Task deleted: \"22\""
+    }
+  ]
+}

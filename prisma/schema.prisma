@@ -1,0 +1,123 @@
+// Prisma schema for the GitTodo system.
+// Enum-like fields (status/category/priority/type) are stored as String;
+// their allowed values are enforced at the application layer via src/types.
+// A `seq` autoincrement column provides a stable insertion-order sort key
+// (important because multiple logs created in one request can share a timestamp).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String       @id
+  username     String       @unique
+  passwordHash String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  sessions     Session[]
+  branches     Branch[]
+  todos        Todo[]
+  ideas        Idea[]
+  logs         ConsoleLog[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model Branch {
+  id      String              @id
+  seq     Int                 @default(autoincrement())
+  userId  String
+  user    User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name    String
+  impact  String              @default("")
+  base    String              @default("master")
+  dev     Boolean             @default(false)
+  qa      Boolean             @default(false)
+  uat     Boolean             @default(false)
+  pro     Boolean             @default(false)
+  status  String              @default("Draft")
+  type    String?
+  history BranchHistoryItem[]
+  todos   Todo[]
+
+  @@index([userId])
+  @@map("branches")
+}
+
+model BranchHistoryItem {
+  id        String  @id
+  seq       Int     @default(autoincrement())
+  branchId  String
+  branch    Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  timestamp String
+  action    String
+  details   String?
+
+  @@index([branchId])
+  @@map("branch_history")
+}
+
+model Todo {
+  id          String  @id
+  seq         Int     @default(autoincrement())
+  userId      String
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String  @default("")
+  category    String
+  priority    String
+  status      String
+  branchId    String?
+  branch      Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  dueDate     String  @default("")
+  createdAt   String
+
+  @@index([userId])
+  @@index([branchId])
+  @@map("todos")
+}
+
+model Idea {
+  id        String @id
+  seq       Int    @default(autoincrement())
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  content   String @default("")
+  status    String @default("open")
+  createdAt String
+  updatedAt String
+
+  @@index([userId])
+  @@map("ideas")
+}
+
+model ConsoleLog {
+  id        String @id
+  seq       Int    @default(autoincrement())
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timestamp String
+  type      String
+  text      String
+
+  @@index([userId])
+  @@map("console_logs")
+}

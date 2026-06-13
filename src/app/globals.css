@@ -1,0 +1,230 @@
+:root {
+  /* Color Palette - Vibrant Royal Purple & Lavender Refined Theme */
+  --bg-outer: #e2e2fc;          /* Soft lavender backdrop */
+  --bg-primary: #ffffff;        /* Main dashboard white background */
+  --bg-secondary: #f4f4fc;      /* Nested panels / page background */
+  --bg-panel: #f4f5fb;          /* Header, inputs, inner panel background */
+  --bg-input: #f4f5fb;          /* Input fields, select dropdowns */
+  
+  --border-color: #e8eafa;      /* Softest violet border */
+  --border-focus: #c7d2fe;      /* Indigo 200 border for focus */
+  
+  --text-primary: #1e1b4b;      /* Deep indigo dark text */
+  --text-secondary: #5f5c80;    /* Medium gray-purple text */
+  --text-muted: #8e8ba8;        /* Muted gray-purple text */
+  
+  /* Accent Colors */
+  --accent-purple: #5e4ae3;     /* Royal purple from reference */
+  --accent-purple-glow: rgba(94, 74, 227, 0.08);
+  --accent-pink: #ec4899;       /* Hot pink for badges/highlights */
+  --accent-pink-glow: rgba(236, 72, 153, 0.08);
+  --accent-cyan: #06b6d4;       /* Cyan */
+  --accent-cyan-glow: rgba(6, 182, 212, 0.08);
+  
+  /* Environment Specific Colors (Vibrant but legible) */
+  --env-dev: #5e4ae3;           /* Purple for Dev */
+  --env-dev-bg: rgba(94, 74, 227, 0.08);
+  --env-qa: #ec4899;            /* Pink for QA */
+  --env-qa-bg: rgba(236, 72, 153, 0.08);
+  --env-uat: #d97706;           /* Dark Amber for UAT */
+  --env-uat-bg: rgba(217, 119, 6, 0.08);
+  --env-pro: #10b981;           /* Emerald for Prod */
+  --env-pro-bg: rgba(16, 185, 129, 0.08);
+  
+  /* Priorities */
+  --priority-low: #8e8ba8;
+  --priority-medium: #5e4ae3;
+  --priority-high: #ea580c;
+  --priority-critical: #dc2626;
+  
+  /* Fonts */
+  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  
+  /* Border Radii (Highly rounded, matching reference image) */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-xxl: 32px;
+  --radius-pill: 9999px;
+  
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(94, 74, 227, 0.02);
+  --shadow-md: 0 8px 24px rgba(94, 74, 227, 0.04);
+  --shadow-lg: 0 16px 48px rgba(94, 74, 227, 0.08);
+  --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.02);
+}
+
+/* Global resets */
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) var(--bg-secondary);
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-outer);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Webkit Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: var(--radius-sm);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-focus);
+}
+
+/* Custom transitions and animations */
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.6;
+    box-shadow: 0 0 5px currentColor;
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 12px currentColor;
+  }
+}
+
+@keyframes textBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Outer layout containing the floating dashboard card */
+.app-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--bg-outer);
+  padding: 0.5rem;
+  overflow: hidden;
+}
+
+/* Floating centered dashboard container with highly rounded corners */
+.dashboard-container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Sidebar navigation area */
+.sidebar {
+  width: 240px;
+  background-color: var(--bg-primary);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  flex-shrink: 0;
+}
+
+/* Main panel scrollable workspace */
+.main-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  background-color: var(--bg-secondary);
+}
+
+/* Custom Checkbox Design for Matrix */
+.env-checkbox-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  width: 24px;
+  height: 24px;
+}
+
+.env-checkbox-input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.env-checkbox-box {
+  width: 20px;
+  height: 20px;
+  background-color: var(--bg-primary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.env-checkbox-wrapper:hover .env-checkbox-box {
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 8px rgba(94, 74, 227, 0.15);
+}
+
+/* Status variants for checkbox active state */
+.env-checkbox-input:checked + .env-checkbox-box.env-dev {
+  background-color: var(--env-dev-bg);
+  border-color: var(--env-dev);
+  color: var(--env-dev);
+}
+.env-checkbox-input:checked + .env-checkbox-box.env-qa {
+  background-color: var(--env-qa-bg);
+  border-color: var(--env-qa);
+  color: var(--env-qa);
+}
+.env-checkbox-input:checked + .env-checkbox-box.env-uat {
+  background-color: var(--env-uat-bg);
+  border-color: var(--env-uat);
+  color: var(--env-uat);
+}
+.env-checkbox-input:checked + .env-checkbox-box.env-pro {
+  background-color: var(--env-pro-bg);
+  border-color: var(--env-pro);
+  color: var(--env-pro);
+}
+
+.env-checkbox-box svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transform: scale(0);
+  transition: transform 0.15s cubic-bezier(0.12, 0.4, 0.29, 1.46);
+}
+
+.env-checkbox-input:checked + .env-checkbox-box svg {
+  transform: scale(1);
+}
