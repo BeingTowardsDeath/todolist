@@ -3,7 +3,7 @@
 import type { ChangeEvent, FormEvent } from 'react';
 import { useRef, useState } from 'react';
 
-import type { Branch, BranchImportInput, BranchImportSummary } from '@/types';
+import type { Branch, BranchImportSummary } from '@/types';
 
 import styles from './BranchSection.module.css';
 
@@ -16,7 +16,7 @@ interface BranchSectionProps {
     status: Branch['status'];
     type?: Branch['type'];
   }) => void;
-  onImportBranches: (branches: BranchImportInput[]) => Promise<BranchImportSummary>;
+  onImportBranchFile: (file: File) => Promise<BranchImportSummary>;
   onUpdateBranchEnv: (branchId: string, env: 'dev' | 'qa' | 'uat' | 'pro', value: boolean) => void;
   onUpdateBranchStatus: (branchId: string, status: Branch['status']) => void;
   onUpdateBranch: (branchId: string, updates: Partial<Branch>) => void;
@@ -46,206 +46,20 @@ const branchTypeLabelMap: Record<NonNullable<Branch['type']>, string> = {
   Bug: '缺陷',
 };
 
-interface BranchImportHeaderIndexes {
-  name: number;
-  impact: number;
-  base: number;
-  dev: number;
-  qa: number;
-  uat: number;
-  pro: number;
-}
-
 interface ImportFeedback {
   type: 'success' | 'error';
   message: string;
 }
 
-const defaultHeaderIndexes: BranchImportHeaderIndexes = {
-  name: 0,
-  impact: 1,
-  base: 2,
-  dev: 3,
-  qa: 4,
-  uat: 5,
-  pro: 6,
-};
+const branchImportTemplateHref = '/templates/branch-upload-template.xlsx';
 
 const getErrorMessage = (error: unknown, fallback: string): string =>
   error instanceof Error ? error.message : fallback;
 
-const normalizeHeader = (value: string): string =>
-  value.trim().replace(/\s+/g, '').toLowerCase();
-
-const detectDelimiter = (text: string): ',' | '\t' => {
-  const firstLine = text.split(/\r?\n/, 1)[0] ?? '';
-  const commaCount = firstLine.split(',').length - 1;
-  const tabCount = firstLine.split('\t').length - 1;
-  return tabCount > commaCount ? '\t' : ',';
-};
-
-const pushParsedRow = (rows: string[][], row: string[], field: string): string[][] => {
-  const nextRow = [...row, field];
-  if (nextRow.some((cell) => cell.trim() !== '')) {
-    rows.push(nextRow);
-  }
-  return rows;
-};
-
-const parseDelimitedRows = (text: string): string[][] => {
-  const delimiter = detectDelimiter(text);
-  const source = text.replace(/^\uFEFF/, '');
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let field = '';
-  let isQuoted = false;
-
-  for (let index = 0; index < source.length; index += 1) {
-    const char = source[index];
-    const nextChar = source[index + 1];
-
-    if (char === '"') {
-      if (isQuoted && nextChar === '"') {
-        field += '"';
-        index += 1;
-      } else {
-        isQuoted = !isQuoted;
-      }
-      continue;
-    }
-
-    if (char === delimiter && !isQuoted) {
-      row.push(field);
-      field = '';
-      continue;
-    }
-
-    if ((char === '\n' || char === '\r') && !isQuoted) {
-      pushParsedRow(rows, row, field);
-      row = [];
-      field = '';
-      if (char === '\r' && nextChar === '\n') {
-        index += 1;
-      }
-      continue;
-    }
-
-    field += char;
-  }
-
-  if (field.length > 0 || row.length > 0) {
-    pushParsedRow(rows, row, field);
-  }
-
-  return rows;
-};
-
-const findHeaderIndex = (headers: string[], aliases: string[], fallback: number): number => {
-  const normalizedAliases = aliases.map(normalizeHeader);
-  const index = headers.findIndex((header) => normalizedAliases.includes(normalizeHeader(header)));
-  return index >= 0 ? index : fallback;
-};
-
-const getHeaderIndexes = (headers: string[]): BranchImportHeaderIndexes => ({
-  name: findHeaderIndex(headers, ['分支', 'branch', 'branch name', 'name'], defaultHeaderIndexes.name),
-  impact: findHeaderIndex(
-    headers,
-    ['内容(影响)', '内容 / 影响', '内容', '影响', 'impact'],
-    defaultHeaderIndexes.impact
-  ),
-  base: findHeaderIndex(headers, ['base', '基础分支'], defaultHeaderIndexes.base),
-  dev: findHeaderIndex(headers, ['dev'], defaultHeaderIndexes.dev),
-  qa: findHeaderIndex(headers, ['qa'], defaultHeaderIndexes.qa),
-  uat: findHeaderIndex(headers, ['uat'], defaultHeaderIndexes.uat),
-  pro: findHeaderIndex(headers, ['pro', 'prod'], defaultHeaderIndexes.pro),
-});
-
-const getCell = (row: string[], index: number): string => (row[index] ?? '').trim();
-
-const toBoolean = (value: string): boolean =>
-  ['1', 'true', 'yes', 'y', '是', '已发布', '发布'].includes(value.trim().toLowerCase());
-
-const deriveImportStatus = (branch: Pick<BranchImportInput, 'dev' | 'qa' | 'uat' | 'pro'>): Branch['status'] => {
-  if (branch.pro) return 'Merged';
-  if (branch.uat) return 'Approved';
-  if (branch.qa || branch.dev) return 'Testing';
-  return 'Draft';
-};
-
-const inferBranchType = (name: string): Branch['type'] | undefined => {
-  const normalizedName = name.toLowerCase();
-  if (normalizedName.includes('/bug/')) return 'Bug';
-  if (normalizedName.includes('/task/')) return 'Task';
-  if (normalizedName.includes('/story/')) return 'Story';
-  return undefined;
-};
-
-const rowToImportedBranch = (
-  row: string[],
-  indexes: BranchImportHeaderIndexes,
-  lineNumber: number
-): BranchImportInput | null => {
-  if (!row.some((cell) => cell.trim() !== '')) return null;
-
-  const name = getCell(row, indexes.name);
-  if (!name) {
-    throw new Error(`第 ${lineNumber} 行缺少分支名称。`);
-  }
-
-  const branchBase = {
-    name,
-    impact: getCell(row, indexes.impact),
-    base: getCell(row, indexes.base) || 'master',
-    dev: toBoolean(getCell(row, indexes.dev)),
-    qa: toBoolean(getCell(row, indexes.qa)),
-    uat: toBoolean(getCell(row, indexes.uat)),
-    pro: toBoolean(getCell(row, indexes.pro)),
-  };
-
-  return {
-    ...branchBase,
-    status: deriveImportStatus(branchBase),
-    type: inferBranchType(name),
-  };
-};
-
-const isBranchImportInput = (value: BranchImportInput | null): value is BranchImportInput =>
-  value !== null;
-
-const parseBranchImportRows = (text: string): BranchImportInput[] => {
-  const rows = parseDelimitedRows(text);
-  const [headers, ...dataRows] = rows;
-  if (!headers) {
-    throw new Error('导入文件为空。');
-  }
-
-  const indexes = getHeaderIndexes(headers);
-  const branches = dataRows
-    .map((row, index) => rowToImportedBranch(row, indexes, index + 2))
-    .filter(isBranchImportInput);
-
-  if (branches.length === 0) {
-    throw new Error('没有找到可导入的分支行。');
-  }
-
-  return branches;
-};
-
-const decodeImportFile = (buffer: ArrayBuffer): string => {
-  const utf8Text = new TextDecoder('utf-8').decode(buffer);
-  if (!utf8Text.includes('\uFFFD')) return utf8Text;
-
-  try {
-    return new TextDecoder('gb18030').decode(buffer);
-  } catch {
-    return utf8Text;
-  }
-};
-
 export default function BranchSection({
   branches,
   onAddBranch,
-  onImportBranches,
+  onImportBranchFile,
   onUpdateBranchEnv,
   onUpdateBranch,
   onDeleteBranch,
@@ -316,9 +130,7 @@ export default function BranchSection({
     setImportFeedback(null);
 
     try {
-      const buffer = await file.arrayBuffer();
-      const importedBranches = parseBranchImportRows(decodeImportFile(buffer));
-      const summary = await onImportBranches(importedBranches);
+      const summary = await onImportBranchFile(file);
       setImportFeedback({
         type: 'success',
         message: `导入完成：新增 ${summary.created}，更新 ${summary.updated}，跳过 ${summary.skipped}。`,
@@ -406,6 +218,19 @@ export default function BranchSection({
             <option value="Task">{branchTypeLabelMap.Task}</option>
             <option value="Bug">{branchTypeLabelMap.Bug}</option>
           </select>
+          <a
+            className={`${styles.importButton} ${styles.templateButton}`}
+            href={branchImportTemplateHref}
+            download="branch-upload-template.xlsx"
+            title="下载分支导入模板"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            下载模板
+          </a>
           <button
             type="button"
             className={styles.importButton}
@@ -423,7 +248,7 @@ export default function BranchSection({
           <input
             ref={importFileInputRef}
             type="file"
-            accept=".csv,.tsv,text/csv,text/tab-separated-values"
+            accept=".xlsx,.csv,.tsv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/tab-separated-values"
             className={styles.hiddenFileInput}
             onChange={handleImportFileChange}
           />

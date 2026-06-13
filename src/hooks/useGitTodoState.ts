@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 
 import type {
   Branch,
-  BranchImportInput,
   BranchImportSummary,
   ConsoleLog,
   Idea,
@@ -255,15 +254,15 @@ export function useGitTodoState(enabled = true) {
     }
   };
 
-  // Import branches from the CSV/TSV template.
-  const handleImportBranches = async (
-    importedBranches: BranchImportInput[]
-  ): Promise<BranchImportSummary> => {
+  // Import branches from the xlsx/csv/tsv template.
+  const handleImportBranchFile = async (file: File): Promise<BranchImportSummary> => {
     try {
+      const formData = new FormData();
+      formData.append('file', file);
+
       const res = await fetch('/api/branches/import', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ branches: importedBranches }),
+        body: formData,
       });
       if (!res.ok) {
         throw new Error(await getApiErrorMessage(res, '导入分支失败。'));
@@ -406,7 +405,7 @@ export function useGitTodoState(enabled = true) {
     handleUpdateIdea,
     handleDeleteIdea,
     handleAddBranch,
-    handleImportBranches,
+    handleImportBranchFile,
     handleUpdateBranchEnv,
     handleUpdateBranchStatus,
     handleUpdateBranch,

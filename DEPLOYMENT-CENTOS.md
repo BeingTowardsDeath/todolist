@@ -104,7 +104,7 @@ sudo -iu postgres psql
 进入 PostgreSQL 后执行：
 
 ```sql
-CREATE USER todolist_user WITH PASSWORD '替换成强密码';
+CREATE USER todolist_user WITH PASSWORD 'Tong@15963';
 CREATE DATABASE todolist OWNER todolist_user;
 \c todolist
 CREATE SCHEMA IF NOT EXISTS public AUTHORIZATION todolist_user;
@@ -133,7 +133,7 @@ sudo -iu deploy
 拉取代码，按你的实际仓库地址替换：
 
 ```bash
-git clone <你的 Git 仓库地址> /var/www/todolist
+git clone https://github.com/BeingTowardsDeath/todolist.git /var/www/todolist
 cd /var/www/todolist
 ```
 
@@ -154,9 +154,9 @@ vi .env
 DATABASE_URL="postgresql://todolist_user:替换成URL编码后的密码@localhost:5432/todolist?schema=public"
 SESSION_COOKIE_SECURE="false"
 ```
-
-`SESSION_COOKIE_SECURE="false"` 只用于“公网 IP + HTTP”部署。以后改成域名 + HTTPS 后，建议删除这一行，或改成：
-
+ 只用于“公网 IP + HTTP”部署。以后改成域名 + HTTPS 后，建议删除这一行，或改成：
+DATABASE_URL="postgresql://todolist_user:Tong%4015963@localhost:5432/todolist?schema=public"
+SESSION_COOKIE_SECURE="false"
 ```env
 SESSION_COOKIE_SECURE="true"
 ```

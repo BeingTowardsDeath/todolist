@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 
 import { getCurrentUser, unauthorizedResponse } from '@/lib/auth';
+import { parseBranchImportBuffer } from '@/lib/branchImportFile';
 import { createLogBuffer, errorMessage, generateId, getSnapshot } from '@/lib/db';
 import { prisma } from '@/lib/prisma';
 import type { Branch } from '@/types';
@@ -151,6 +152,28 @@ const getImportDetails = (branch: NormalizedImportBranch): string =>
     `pro: ${formatFlag(branch.pro)}`,
   ].join('，');
 
+const getImportedBranchesFromRequest = async (request: NextRequest): Promise<unknown[]> => {
+  const contentType = request.headers.get('content-type') ?? '';
+
+  if (contentType.includes('multipart/form-data')) {
+    const formData = await request.formData();
+    const file = formData.get('file');
+
+    if (!(file instanceof File)) {
+      throw new Error('请选择要导入的模板文件。');
+    }
+
+    return parseBranchImportBuffer({
+      fileName: file.name,
+      contentType: file.type,
+      buffer: Buffer.from(await file.arrayBuffer()),
+    });
+  }
+
+  const body = (await request.json()) as unknown;
+  return isRecord(body) && Array.isArray(body.branches) ? body.branches : [];
+};
+
 // POST /api/branches/import
 export async function POST(request: NextRequest) {
   try {
@@ -159,8 +182,16 @@ export async function POST(request: NextRequest) {
       return unauthorizedResponse();
     }
 
-    const body = (await request.json()) as unknown;
-    const rawBranches = isRecord(body) && Array.isArray(body.branches) ? body.branches : [];
+    let rawBranches: unknown[];
+    try {
+      rawBranches = await getImportedBranchesFromRequest(request);
+    } catch (error) {
+      return NextResponse.json(
+        { error: errorMessage(error, '导入文件解析失败。') },
+        { status: 400 }
+      );
+    }
+
     if (rawBranches.length === 0) {
       return NextResponse.json({ error: '导入文件没有可用的分支数据。' }, { status: 400 });
     }

@@ -38,7 +38,7 @@ export default function Page() {
     handleUpdateIdea,
     handleDeleteIdea,
     handleAddBranch,
-    handleImportBranches,
+    handleImportBranchFile,
     handleUpdateBranchEnv,
     handleUpdateBranchStatus,
     handleUpdateBranch,
@@ -213,7 +213,7 @@ export default function Page() {
             <BranchSection
               branches={branches}
               onAddBranch={handleAddBranch}
-              onImportBranches={handleImportBranches}
+              onImportBranchFile={handleImportBranchFile}
               onUpdateBranchEnv={handleUpdateBranchEnv}
               onUpdateBranchStatus={handleUpdateBranchStatus}
               onUpdateBranch={handleUpdateBranch}

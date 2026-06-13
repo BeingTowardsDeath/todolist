@@ -5,7 +5,8 @@
 // (important because multiple logs created in one request can share a timestamp).
 
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
+  engineType = "client"
 }
 
 datasource db {
