@@ -53,6 +53,7 @@ model Branch {
   qa      Boolean             @default(false)
   uat     Boolean             @default(false)
   pro     Boolean             @default(false)
+  pinned  Boolean             @default(false)
   status  String              @default("Draft")
   type    String?
   history BranchHistoryItem[]

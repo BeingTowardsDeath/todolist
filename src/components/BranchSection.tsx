@@ -74,6 +74,14 @@ export default function BranchSection({
   const importFileInputRef = useRef<HTMLInputElement | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importFeedback, setImportFeedback] = useState<ImportFeedback | null>(null);
+
+  // State for branch classification tab ('active' | 'completed')
+  const [activeBranchTab, setActiveBranchTab] = useState<'active' | 'completed'>('active');
+  // State for pending PROD update confirmation
+  const [pendingProUpdate, setPendingProUpdate] = useState<{
+    branchId: string;
+    value: boolean;
+  } | null>(null);
   
   // State to track original value when editing text areas inline (to log to history onBlur)
   const [activeEdit, setActiveEdit] = useState<{
@@ -147,6 +155,10 @@ export default function BranchSection({
     }
   };
 
+  const handleProChange = (branchId: string, checked: boolean) => {
+    setPendingProUpdate({ branchId, value: checked });
+  };
+
   // Filter branches
   const filteredBranches = branches.filter((branch) => {
     const matchesSearch = 
@@ -168,9 +180,222 @@ export default function BranchSection({
     return branch.type === typeFilter;
   });
 
-  const totalPages = Math.ceil(filteredBranches.length / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const paginatedBranches = filteredBranches.slice(startIndex, startIndex + pageSize);
+  const sortFunc = (a: Branch, b: Branch) => {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    return b.seq - a.seq; // newer branches (larger seq) on top
+  };
+
+  const activeBranches = filteredBranches.filter(b => !b.pro).sort(sortFunc);
+  const completedBranches = filteredBranches.filter(b => b.pro).sort(sortFunc);
+
+  const currentTabList = activeBranchTab === 'active' ? activeBranches : completedBranches;
+  const totalPages = Math.max(1, Math.ceil(currentTabList.length / pageSize));
+  const adjustedCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (adjustedCurrentPage - 1) * pageSize;
+  const paginatedBranches = currentTabList.slice(startIndex, startIndex + pageSize);
+
+  const renderBranchTable = (list: Branch[]) => {
+    return (
+      <table className={styles.branchTable}>
+        <thead>
+          <tr>
+            <th>分支</th>
+            <th style={{ width: '100px' }}>类型</th>
+            <th>内容 / 影响</th>
+            <th>基础分支</th>
+            <th style={{ textAlign: 'center', width: '70px' }}>dev</th>
+            <th style={{ textAlign: 'center', width: '70px' }}>qa</th>
+            <th style={{ textAlign: 'center', width: '70px' }}>uat</th>
+            <th style={{ textAlign: 'center', width: '70px' }}>pro</th>
+            <th style={{ textAlign: 'center', width: '100px' }}>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {list.map((branch) => (
+            <tr key={branch.id}>
+              <td className={styles.branchCell}>
+                <div className={styles.branchNameWrapper}>
+                  <button
+                    type="button"
+                    className={`${styles.pinBtn} ${branch.pinned ? styles.pinnedActive : ''}`}
+                    onClick={() => onUpdateBranch(branch.id, { pinned: !branch.pinned })}
+                    title={branch.pinned ? "取消置顶" : "置顶分支"}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill={branch.pinned ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                    </svg>
+                  </button>
+                  <textarea 
+                    value={branch.name} 
+                    onChange={(e) => onUpdateBranch(branch.id, { name: e.target.value })} 
+                    onFocus={() => setActiveEdit({ branchId: branch.id, field: 'name', originalValue: branch.name })}
+                    onBlur={() => {
+                      if (activeEdit && activeEdit.branchId === branch.id && activeEdit.field === 'name') {
+                        const oldVal = activeEdit.originalValue.trim();
+                        const newVal = branch.name.trim();
+                        if (oldVal !== newVal) {
+                          onLogBranchEdit(branch.id, 'name', oldVal, newVal);
+                        }
+                      }
+                      setActiveEdit(null);
+                    }}
+                    className={styles.editableTextarea + ' ' + styles.boldTextarea} 
+                    rows={getRows(branch.name, 22)}
+                  />
+                </div>
+              </td>
+              <td>
+                <select
+                  value={branch.type || ''}
+                  onChange={(e) => onUpdateBranch(branch.id, { type: e.target.value as Branch['type'] })}
+                  className={`${styles.editableSelect} ${styles.typeBadge} ${styles[`type-${branch.type || 'None'}`]}`}
+                >
+                  <option value="" disabled>选择类型...</option>
+                  <option value="Story">{branchTypeLabelMap.Story}</option>
+                  <option value="Task">{branchTypeLabelMap.Task}</option>
+                  <option value="Bug">{branchTypeLabelMap.Bug}</option>
+                </select>
+              </td>
+              <td className={styles.impactCell} title="点击编辑">
+                <textarea
+                  value={branch.impact || ''}
+                  onChange={(e) => onUpdateBranch(branch.id, { impact: e.target.value })}
+                  onFocus={() => setActiveEdit({ branchId: branch.id, field: 'impact', originalValue: branch.impact || '' })}
+                  onBlur={() => {
+                    if (activeEdit && activeEdit.branchId === branch.id && activeEdit.field === 'impact') {
+                      const oldVal = activeEdit.originalValue.trim();
+                      const newVal = (branch.impact || '').trim();
+                      if (oldVal !== newVal) {
+                        onLogBranchEdit(branch.id, 'impact', oldVal, newVal);
+                      }
+                    }
+                    setActiveEdit(null);
+                  }}
+                  className={styles.editableTextarea}
+                  rows={getRows(branch.impact || '', 30)}
+                />
+              </td>
+              <td className={styles.baseCell}>
+                <textarea 
+                  value={branch.base} 
+                  onChange={(e) => onUpdateBranch(branch.id, { base: e.target.value })} 
+                  onFocus={() => setActiveEdit({ branchId: branch.id, field: 'base', originalValue: branch.base })}
+                  onBlur={() => {
+                    if (activeEdit && activeEdit.branchId === branch.id && activeEdit.field === 'base') {
+                      const oldVal = activeEdit.originalValue.trim();
+                      const newVal = branch.base.trim();
+                      if (oldVal !== newVal) {
+                        onLogBranchEdit(branch.id, 'base', oldVal, newVal);
+                      }
+                    }
+                    setActiveEdit(null);
+                  }}
+                  className={styles.editableTextarea + ' ' + styles.monoTextarea} 
+                  rows={getRows(branch.base, 10)}
+                  style={{ width: '80px' }}
+                />
+              </td>
+              
+              {/* DEV checkbox */}
+              <td style={{ textAlign: 'center' }}>
+                <label className="env-checkbox-wrapper">
+                  <input
+                    type="checkbox"
+                    checked={branch.dev}
+                    onChange={(e) => onUpdateBranchEnv(branch.id, 'dev', e.target.checked)}
+                    className="env-checkbox-input"
+                  />
+                  <div className="env-checkbox-box env-dev">
+                    <svg viewBox="0 0 24 24">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </div>
+                </label>
+              </td>
+
+              {/* QA checkbox */}
+              <td style={{ textAlign: 'center' }}>
+                <label className="env-checkbox-wrapper">
+                  <input
+                    type="checkbox"
+                    checked={branch.qa}
+                    onChange={(e) => onUpdateBranchEnv(branch.id, 'qa', e.target.checked)}
+                    className="env-checkbox-input"
+                  />
+                  <div className="env-checkbox-box env-qa">
+                    <svg viewBox="0 0 24 24">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </div>
+                </label>
+              </td>
+
+              {/* UAT checkbox */}
+              <td style={{ textAlign: 'center' }}>
+                <label className="env-checkbox-wrapper">
+                  <input
+                    type="checkbox"
+                    checked={branch.uat}
+                    onChange={(e) => onUpdateBranchEnv(branch.id, 'uat', e.target.checked)}
+                    className="env-checkbox-input"
+                  />
+                  <div className="env-checkbox-box env-uat">
+                    <svg viewBox="0 0 24 24">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </div>
+                </label>
+              </td>
+
+              {/* PRO checkbox */}
+              <td style={{ textAlign: 'center' }}>
+                <label className="env-checkbox-wrapper">
+                  <input
+                    type="checkbox"
+                    checked={branch.pro}
+                    onChange={(e) => handleProChange(branch.id, e.target.checked)}
+                    className="env-checkbox-input"
+                  />
+                  <div className="env-checkbox-box env-pro">
+                    <svg viewBox="0 0 24 24">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </div>
+                </label>
+              </td>
+
+              {/* ACTIONS */}
+              <td style={{ textAlign: 'center' }}>
+                <div className={styles.actionsCell}>
+                  <button 
+                    className={styles.historyBtn} 
+                    onClick={() => setSelectedHistoryBranchId(branch.id)} 
+                    title="查看修改历史"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                      <polyline points="3 3 3 8 8 8" />
+                      <line x1="12" y1="7" x2="12" y2="12" />
+                      <line x1="12" y1="12" x2="16" y2="14" />
+                    </svg>
+                  </button>
+                  <button className={styles.actionBtn} onClick={() => onDeleteBranch(branch.id)} title="删除分支">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  };
+
+  const isSearchEmpty = filteredBranches.length === 0;
 
   return (
     <div className={styles.container}>
@@ -274,8 +499,49 @@ export default function BranchSection({
         </div>
       )}
 
-      <div className={styles.tableWrapper}>
-        {filteredBranches.length === 0 ? (
+      {/* Tab Container */}
+      <div className={styles.tabContainer}>
+        <button
+          type="button"
+          className={`${styles.tabBtn} ${activeBranchTab === 'active' ? styles.tabBtnActive : ''}`}
+          onClick={() => {
+            setActiveBranchTab('active');
+            resetPage();
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: activeBranchTab === 'active' ? 'var(--accent-purple)' : 'inherit' }}>
+            <line x1="6" y1="3" x2="6" y2="15" />
+            <circle cx="18" cy="6" r="3" />
+            <circle cx="6" cy="18" r="3" />
+            <path d="M18 9a9 9 0 0 1-9 9" />
+          </svg>
+          活跃分支
+          <span className={`${styles.tabBadge} ${activeBranchTab === 'active' ? styles.tabBadgeActive : ''}`}>
+            {activeBranches.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          className={`${styles.tabBtn} ${activeBranchTab === 'completed' ? styles.tabBtnActiveCompleted : ''}`}
+          onClick={() => {
+            setActiveBranchTab('completed');
+            resetPage();
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: activeBranchTab === 'completed' ? '#10b981' : 'inherit' }}>
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
+          已完成分支
+          <span className={`${styles.tabBadge} ${activeBranchTab === 'completed' ? styles.tabBadgeCompletedActive : ''}`}>
+            {completedBranches.length}
+          </span>
+        </button>
+      </div>
+
+      {isSearchEmpty ? (
+        <div className={styles.tableWrapper}>
           <div className={styles.emptyState}>
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--text-muted)' }}>
               <line x1="6" y1="3" x2="6" y2="15" />
@@ -285,194 +551,20 @@ export default function BranchSection({
             </svg>
             <p>没有找到匹配的分支。可以新建一个分支开始管理。</p>
           </div>
-        ) : (
-          <table className={styles.branchTable}>
-            <thead>
-              <tr>
-                <th>分支</th>
-                <th style={{ width: '100px' }}>类型</th>
-                <th>内容 / 影响</th>
-                <th>基础分支</th>
-                <th style={{ textAlign: 'center', width: '70px' }}>dev</th>
-                <th style={{ textAlign: 'center', width: '70px' }}>qa</th>
-                <th style={{ textAlign: 'center', width: '70px' }}>uat</th>
-                <th style={{ textAlign: 'center', width: '70px' }}>pro</th>
-                <th style={{ textAlign: 'center', width: '100px' }}>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedBranches.map((branch) => (
-                <tr key={branch.id}>
-                  <td className={styles.branchCell}>
-                    <textarea 
-                      value={branch.name} 
-                      onChange={(e) => onUpdateBranch(branch.id, { name: e.target.value })} 
-                      onFocus={() => setActiveEdit({ branchId: branch.id, field: 'name', originalValue: branch.name })}
-                      onBlur={() => {
-                        if (activeEdit && activeEdit.branchId === branch.id && activeEdit.field === 'name') {
-                          const oldVal = activeEdit.originalValue.trim();
-                          const newVal = branch.name.trim();
-                          if (oldVal !== newVal) {
-                            onLogBranchEdit(branch.id, 'name', oldVal, newVal);
-                          }
-                        }
-                        setActiveEdit(null);
-                      }}
-                      className={styles.editableTextarea + ' ' + styles.boldTextarea} 
-                      rows={getRows(branch.name, 22)}
-                    />
-                  </td>
-                  <td>
-                    <select
-                      value={branch.type || ''}
-                      onChange={(e) => onUpdateBranch(branch.id, { type: e.target.value as Branch['type'] })}
-                      className={`${styles.editableSelect} ${styles.typeBadge} ${styles[`type-${branch.type || 'None'}`]}`}
-                    >
-                      <option value="" disabled>选择类型...</option>
-                      <option value="Story">{branchTypeLabelMap.Story}</option>
-                      <option value="Task">{branchTypeLabelMap.Task}</option>
-                      <option value="Bug">{branchTypeLabelMap.Bug}</option>
-                    </select>
-                  </td>
-                  <td className={styles.impactCell} title="点击编辑">
-                    <textarea
-                      value={branch.impact || ''}
-                      onChange={(e) => onUpdateBranch(branch.id, { impact: e.target.value })}
-                      onFocus={() => setActiveEdit({ branchId: branch.id, field: 'impact', originalValue: branch.impact || '' })}
-                      onBlur={() => {
-                        if (activeEdit && activeEdit.branchId === branch.id && activeEdit.field === 'impact') {
-                          const oldVal = activeEdit.originalValue.trim();
-                          const newVal = (branch.impact || '').trim();
-                          if (oldVal !== newVal) {
-                            onLogBranchEdit(branch.id, 'impact', oldVal, newVal);
-                          }
-                        }
-                        setActiveEdit(null);
-                      }}
-                      className={styles.editableTextarea}
-                      rows={getRows(branch.impact || '', 30)}
-                    />
-                  </td>
-                  <td className={styles.baseCell}>
-                    <textarea 
-                      value={branch.base} 
-                      onChange={(e) => onUpdateBranch(branch.id, { base: e.target.value })} 
-                      onFocus={() => setActiveEdit({ branchId: branch.id, field: 'base', originalValue: branch.base })}
-                      onBlur={() => {
-                        if (activeEdit && activeEdit.branchId === branch.id && activeEdit.field === 'base') {
-                          const oldVal = activeEdit.originalValue.trim();
-                          const newVal = branch.base.trim();
-                          if (oldVal !== newVal) {
-                            onLogBranchEdit(branch.id, 'base', oldVal, newVal);
-                          }
-                        }
-                        setActiveEdit(null);
-                      }}
-                      className={styles.editableTextarea + ' ' + styles.monoTextarea} 
-                      rows={getRows(branch.base, 10)}
-                      style={{ width: '80px' }}
-                    />
-                  </td>
-                  
-                  {/* DEV checkbox */}
-                  <td style={{ textAlign: 'center' }}>
-                    <label className="env-checkbox-wrapper">
-                      <input
-                        type="checkbox"
-                        checked={branch.dev}
-                        onChange={(e) => onUpdateBranchEnv(branch.id, 'dev', e.target.checked)}
-                        className="env-checkbox-input"
-                      />
-                      <div className="env-checkbox-box env-dev">
-                        <svg viewBox="0 0 24 24">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      </div>
-                    </label>
-                  </td>
+        </div>
+      ) : (
+        <div className={styles.tableWrapper} style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+          {currentTabList.length === 0 ? (
+            <div className={styles.emptyState} style={{ padding: '3rem' }}>
+              <p>{activeBranchTab === 'active' ? '暂无活跃分支' : '暂无已完成分支'}</p>
+            </div>
+          ) : (
+            renderBranchTable(paginatedBranches)
+          )}
+        </div>
+      )}
 
-                  {/* QA checkbox */}
-                  <td style={{ textAlign: 'center' }}>
-                    <label className="env-checkbox-wrapper">
-                      <input
-                        type="checkbox"
-                        checked={branch.qa}
-                        onChange={(e) => onUpdateBranchEnv(branch.id, 'qa', e.target.checked)}
-                        className="env-checkbox-input"
-                      />
-                      <div className="env-checkbox-box env-qa">
-                        <svg viewBox="0 0 24 24">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      </div>
-                    </label>
-                  </td>
-
-                  {/* UAT checkbox */}
-                  <td style={{ textAlign: 'center' }}>
-                    <label className="env-checkbox-wrapper">
-                      <input
-                        type="checkbox"
-                        checked={branch.uat}
-                        onChange={(e) => onUpdateBranchEnv(branch.id, 'uat', e.target.checked)}
-                        className="env-checkbox-input"
-                      />
-                      <div className="env-checkbox-box env-uat">
-                        <svg viewBox="0 0 24 24">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      </div>
-                    </label>
-                  </td>
-
-                  {/* PRO checkbox */}
-                  <td style={{ textAlign: 'center' }}>
-                    <label className="env-checkbox-wrapper">
-                      <input
-                        type="checkbox"
-                        checked={branch.pro}
-                        onChange={(e) => onUpdateBranchEnv(branch.id, 'pro', e.target.checked)}
-                        className="env-checkbox-input"
-                      />
-                      <div className="env-checkbox-box env-pro">
-                        <svg viewBox="0 0 24 24">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      </div>
-                    </label>
-                  </td>
-
-                  {/* ACTIONS */}
-                  <td style={{ textAlign: 'center' }}>
-                    <div className={styles.actionsCell}>
-                      <button 
-                        className={styles.historyBtn} 
-                        onClick={() => setSelectedHistoryBranchId(branch.id)} 
-                        title="查看修改历史"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                          <polyline points="3 3 3 8 8 8" />
-                          <line x1="12" y1="7" x2="12" y2="12" />
-                          <line x1="12" y1="12" x2="16" y2="14" />
-                        </svg>
-                      </button>
-                      <button className={styles.actionBtn} onClick={() => onDeleteBranch(branch.id)} title="删除分支">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polyline points="3 6 5 6 21 6" />
-                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                        </svg>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {filteredBranches.length > 0 && (
+      {!isSearchEmpty && currentTabList.length > 0 && (
         <div className={styles.pagination}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
@@ -504,7 +596,7 @@ export default function BranchSection({
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <button 
-              disabled={currentPage === 1} 
+              disabled={adjustedCurrentPage === 1} 
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               className={styles.pageBtn}
             >
@@ -514,10 +606,10 @@ export default function BranchSection({
               上一页
             </button>
             <span className={styles.pageInfo}>
-              第 <strong>{totalPages > 0 ? currentPage : 0}</strong> 页，共 {totalPages} 页
+              第 <strong>{totalPages > 0 ? adjustedCurrentPage : 0}</strong> 页，共 {totalPages} 页
             </span>
             <button 
-              disabled={currentPage === totalPages || totalPages === 0} 
+              disabled={adjustedCurrentPage === totalPages || totalPages === 0} 
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               className={styles.pageBtn}
             >
@@ -683,6 +775,47 @@ export default function BranchSection({
             <div className={styles.formActions} style={{ margin: 0 }}>
               <button className={styles.cancelBtn} onClick={() => setSelectedHistoryBranchId(null)}>
                 关闭
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pendingProUpdate && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.confirmModalContent}>
+            <div className={styles.confirmModalHeader}>
+              <div className={styles.warningIcon}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </div>
+              <h3>{pendingProUpdate.value ? '确认发布到 PROD 环境？' : '确认从 PROD 环境回滚？'}</h3>
+            </div>
+            <p className={styles.confirmModalBody}>
+              {pendingProUpdate.value 
+                ? '发布到 PROD 会将分支合并到 master 分支并上线。对应的关联任务将自动更新为已完成状态，且该分支将移动至“已完成分支”分类。' 
+                : '从 PROD 回滚分支会将生产发布状态撤销。对应的关联任务状态不会改变，但该分支将移回“活跃分支”分类。'}
+            </p>
+            <div className={styles.confirmModalActions}>
+              <button 
+                type="button" 
+                className={styles.cancelBtn} 
+                onClick={() => setPendingProUpdate(null)}
+              >
+                取消
+              </button>
+              <button 
+                type="button" 
+                className={pendingProUpdate.value ? styles.confirmProBtn : styles.confirmRollbackBtn} 
+                onClick={() => {
+                  onUpdateBranchEnv(pendingProUpdate.branchId, 'pro', pendingProUpdate.value);
+                  setPendingProUpdate(null);
+                }}
+              >
+                确认执行
               </button>
             </div>
           </div>

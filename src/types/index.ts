@@ -7,6 +7,7 @@ export interface BranchHistoryItem {
 
 export interface Branch {
   id: string;
+  seq: number;
   name: string;
   impact: string;
   base: string;
@@ -14,6 +15,7 @@ export interface Branch {
   qa: boolean;
   uat: boolean;
   pro: boolean;
+  pinned: boolean;
   status: 'Draft' | 'PR Open' | 'Testing' | 'Approved' | 'Merged' | 'Stale';
   type?: 'Story' | 'Task' | 'Bug';
   history?: BranchHistoryItem[];

@@ -4,8 +4,24 @@ import React, { useState } from 'react';
 import { Todo, Branch } from '../types';
 import styles from './TodoSection.module.css';
 
-// Anchor/current date for reference
-const TODAY_STR = '2026-06-02';
+// Dynamic today date resolution in local system time
+const getTodayString = () => {
+  const date = new Date();
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+const TODAY_STR = getTodayString();
+
+const parseLocalDate = (dateStr: string) => {
+  if (!dateStr) return new Date();
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return new Date();
+  const [y, m, d] = parts.map(Number);
+  return new Date(y, m - 1, d, 0, 0, 0, 0);
+};
 
 // Pure date utility helpers
 const getStartOfWeek = (date: Date) => {
@@ -26,7 +42,7 @@ const formatDateString = (date: Date) => {
 };
 
 const addDays = (dateStr: string, days: number) => {
-  const date = new Date(dateStr || TODAY_STR);
+  const date = parseLocalDate(dateStr || TODAY_STR);
   date.setDate(date.getDate() + days);
   return formatDateString(date);
 };
@@ -97,7 +113,7 @@ const formatDueDate = (dateStr: string) => {
   const nextDate = addDays(TODAY_STR, 1);
   if (dateStr === nextDate) return '明天';
   try {
-    const d = new Date(dateStr);
+    const d = parseLocalDate(dateStr);
     return d.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
   } catch {
     return dateStr;
@@ -408,7 +424,7 @@ export default function TodoSection({
 }: TodoSectionProps) {
   // Navigation & View State
   const [viewMode, setViewMode] = useState<'week' | 'timeline' | 'grid'>('week');
-  const [anchorDate, setAnchorDate] = useState<Date>(() => new Date(TODAY_STR));
+  const [anchorDate, setAnchorDate] = useState<Date>(() => parseLocalDate(TODAY_STR));
   const [cardMode, setCardMode] = useState<'detailed' | 'compact'>('detailed');
 
   // Filters State
@@ -586,7 +602,7 @@ export default function TodoSection({
     const todayTasks: Todo[] = [];
     const tomorrowTasks: Todo[] = [];
     
-    const todayDate = new Date(TODAY_STR);
+    const todayDate = parseLocalDate(TODAY_STR);
     const tomorrowDate = new Date(todayDate);
     tomorrowDate.setDate(todayDate.getDate() + 1);
     const tomorrowStr = formatDateString(tomorrowDate);

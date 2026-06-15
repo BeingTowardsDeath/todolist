@@ -56,6 +56,7 @@ export const toHistoryItem = (item: BranchHistoryItemModel): BranchHistoryItem =
 
 export const toBranch = (branch: BranchWithHistory): Branch => ({
   id: branch.id,
+  seq: branch.seq,
   name: branch.name,
   impact: branch.impact,
   base: branch.base,
@@ -63,9 +64,10 @@ export const toBranch = (branch: BranchWithHistory): Branch => ({
   qa: branch.qa,
   uat: branch.uat,
   pro: branch.pro,
+  pinned: (branch as any).pinned ?? false,
   // Values are constrained to the unions in src/types at the application layer.
   status: branch.status as Branch['status'],
-  type: (branch.type ?? undefined) as Branch['type'],
+  type: branch.type ? (branch.type as Branch['type']) : undefined,
   history: branch.history.map(toHistoryItem),
 });
 
