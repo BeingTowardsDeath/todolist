@@ -104,7 +104,7 @@ sudo -iu postgres psql
 进入 PostgreSQL 后执行：
 
 ```sql
-CREATE USER todolist_user WITH PASSWORD 'Tong@15963';
+CREATE USER todolist_user WITH PASSWORD 'Tong15963';
 CREATE DATABASE todolist OWNER todolist_user;
 \c todolist
 CREATE SCHEMA IF NOT EXISTS public AUTHORIZATION todolist_user;
@@ -155,7 +155,7 @@ DATABASE_URL="postgresql://todolist_user:替换成URL编码后的密码@localhos
 SESSION_COOKIE_SECURE="false"
 ```
  只用于“公网 IP + HTTP”部署。以后改成域名 + HTTPS 后，建议删除这一行，或改成：
-DATABASE_URL="postgresql://todolist_user:Tong%4015963@localhost:5432/todolist?schema=public"
+DATABASE_URL="postgresql://todolist_user:Tong15963@localhost:5432/todolist?schema=public"
 SESSION_COOKIE_SECURE="false"
 ```env
 SESSION_COOKIE_SECURE="true"
