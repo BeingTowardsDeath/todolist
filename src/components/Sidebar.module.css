@@ -114,6 +114,10 @@
   font-size: 0.8rem;
 }
 
+.proStatValue {
+  color: var(--env-pro);
+}
+
 .bottomSection {
   display: flex;
   flex-direction: column;

@@ -23,6 +23,7 @@ model User {
   branches     Branch[]
   todos        Todo[]
   ideas        Idea[]
+  notes        Note[]
   logs         ConsoleLog[]
 
   @@map("users")
@@ -109,6 +110,22 @@ model Idea {
 
   @@index([userId])
   @@map("ideas")
+}
+
+model Note {
+  id        String  @id
+  seq       Int     @default(autoincrement())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  content   String  @default("")
+  color     String  @default("default")
+  isPinned  Boolean @default(false)
+  createdAt String
+  updatedAt String
+
+  @@index([userId])
+  @@map("notes")
 }
 
 model ConsoleLog {

@@ -7,6 +7,9 @@ import type {
   Idea,
   IdeaInput,
   IdeaUpdateInput,
+  Note,
+  NoteInput,
+  NoteUpdateInput,
   Todo,
   WorkspaceSnapshot,
 } from '@/types';
@@ -27,6 +30,7 @@ export function useGitTodoState(enabled = true) {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [ideas, setIdeas] = useState<Idea[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [logs, setLogs] = useState<ConsoleLog[]>([]);
   const [loading, setLoading] = useState<boolean>(enabled);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +40,7 @@ export function useGitTodoState(enabled = true) {
       setTodos([]);
       setBranches([]);
       setIdeas([]);
+      setNotes([]);
       setLogs([]);
       setError(null);
       setLoading(false);
@@ -53,6 +58,7 @@ export function useGitTodoState(enabled = true) {
       setTodos(data.todos ?? []);
       setBranches(data.branches ?? []);
       setIdeas(data.ideas ?? []);
+      setNotes(data.notes ?? []);
       setLogs(data.logs ?? []);
     } catch (err) {
       setError(getErrorMessage(err, '加载初始状态时发生错误。'));
@@ -75,6 +81,7 @@ export function useGitTodoState(enabled = true) {
     setTodos(data.todos);
     setBranches(data.branches);
     setIdeas(data.ideas);
+    setNotes(data.notes);
     setLogs(data.logs);
   };
 
@@ -227,6 +234,55 @@ export function useGitTodoState(enabled = true) {
       updateState(data);
     } catch (err) {
       setError(getErrorMessage(err, '删除想法失败。'));
+    }
+  };
+
+  const handleAddNote = async (note: NoteInput) => {
+    try {
+      const res = await fetch('/api/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(note),
+      });
+      if (!res.ok) {
+        throw new Error(await getApiErrorMessage(res, '服务器创建记事失败。'));
+      }
+      const data = (await res.json()) as WorkspaceSnapshot;
+      updateState(data);
+    } catch (err) {
+      setError(getErrorMessage(err, '创建记事失败。'));
+    }
+  };
+
+  const handleUpdateNote = async (noteId: string, updates: NoteUpdateInput) => {
+    try {
+      const res = await fetch(`/api/notes/${noteId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updates }),
+      });
+      if (!res.ok) {
+        throw new Error(await getApiErrorMessage(res, '服务器更新记事失败。'));
+      }
+      const data = (await res.json()) as WorkspaceSnapshot;
+      updateState(data);
+    } catch (err) {
+      setError(getErrorMessage(err, '更新记事失败。'));
+    }
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    try {
+      const res = await fetch(`/api/notes/${noteId}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        throw new Error(await getApiErrorMessage(res, '服务器删除记事失败。'));
+      }
+      const data = (await res.json()) as WorkspaceSnapshot;
+      updateState(data);
+    } catch (err) {
+      setError(getErrorMessage(err, '删除记事失败。'));
     }
   };
 
@@ -392,6 +448,7 @@ export function useGitTodoState(enabled = true) {
     todos,
     branches,
     ideas,
+    notes,
     logs,
     loading,
     error,
@@ -404,6 +461,9 @@ export function useGitTodoState(enabled = true) {
     handleAddIdea,
     handleUpdateIdea,
     handleDeleteIdea,
+    handleAddNote,
+    handleUpdateNote,
+    handleDeleteNote,
     handleAddBranch,
     handleImportBranchFile,
     handleUpdateBranchEnv,

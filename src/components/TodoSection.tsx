@@ -107,6 +107,25 @@ interface TaskCardProps {
   cardMode?: 'detailed' | 'compact';
 }
 
+interface TaskExplorerProps {
+  branches: Branch[];
+  todos: Todo[];
+  onCreateTodo: () => void;
+  onDeleteTodo: (todoId: string) => void;
+  onEditTodo: (todo: Todo) => void;
+  onUpdateTodoDueDate: (todoId: string, dueDate: string) => void;
+  onUpdateTodoStatus: (todoId: string, status: Todo['status']) => void;
+}
+
+interface TaskFileRowProps {
+  branchName: string;
+  todo: Todo;
+  onDeleteTodo: (todoId: string) => void;
+  onEditTodo: (todo: Todo) => void;
+  onUpdateTodoDueDate: (todoId: string, dueDate: string) => void;
+  onUpdateTodoStatus: (todoId: string, status: Todo['status']) => void;
+}
+
 const formatDueDate = (dateStr: string) => {
   if (!dateStr) return '未安排';
   if (dateStr === TODAY_STR) return '今天';
@@ -119,6 +138,234 @@ const formatDueDate = (dateStr: string) => {
     return dateStr;
   }
 };
+
+const getTaskFolderLabel = (category: Todo['category']): string =>
+  `${getCategoryIcon(category)} ${categoryLabelMap[category]}`;
+
+const getBranchName = (todo: Todo, branches: Branch[]): string => {
+  if (todo.category !== 'dev' || !todo.branchId) {
+    return '未关联';
+  }
+
+  return branches.find((branch) => branch.id === todo.branchId)?.name ?? '分支已删除';
+};
+
+function FileTextIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2v6h6" />
+      <path d="M8 13h8" />
+      <path d="M8 17h6" />
+    </svg>
+  );
+}
+
+function EditFileIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+    </svg>
+  );
+}
+
+function TrashFileIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    </svg>
+  );
+}
+
+function TaskFileRow({
+  branchName,
+  todo,
+  onDeleteTodo,
+  onEditTodo,
+  onUpdateTodoDueDate,
+  onUpdateTodoStatus,
+}: TaskFileRowProps) {
+  return (
+    <tr className={styles.fileRow}>
+      <td>
+        <button type="button" className={styles.fileNameButton} onClick={() => onEditTodo(todo)}>
+          <span className={`${styles.fileIcon} ${styles[`fileIcon-${todo.category}`]}`}>
+            <FileTextIcon />
+          </span>
+          <span className={styles.fileNameText}>
+            <span>{todo.title}</span>
+            {todo.description && <small>{todo.description}</small>}
+          </span>
+        </button>
+      </td>
+      <td>
+        <span className={styles.folderBadge}>{getTaskFolderLabel(todo.category)}</span>
+      </td>
+      <td>
+        <select
+          value={todo.status}
+          onChange={(event) => onUpdateTodoStatus(todo.id, event.target.value as Todo['status'])}
+          className={styles.fileSelect}
+          aria-label={`修改 ${todo.title} 的状态`}
+        >
+          <option value="backlog">{statusLabelMap.backlog}</option>
+          <option value="todo">{statusLabelMap.todo}</option>
+          <option value="in-progress">{statusLabelMap['in-progress']}</option>
+          <option value="review">{statusLabelMap.review}</option>
+          <option value="done">{statusLabelMap.done}</option>
+        </select>
+      </td>
+      <td>
+        <span className={`${styles.priorityBadge} ${styles[`priority-${todo.priority}`]}`}>
+          {priorityLabelMap[todo.priority]}
+        </span>
+      </td>
+      <td>
+        <input
+          type="date"
+          value={todo.dueDate || ''}
+          onChange={(event) => onUpdateTodoDueDate(todo.id, event.target.value)}
+          className={styles.fileDateInput}
+          aria-label={`修改 ${todo.title} 的截止日期`}
+        />
+      </td>
+      <td>
+        <span className={styles.branchName} title={branchName}>{branchName}</span>
+      </td>
+      <td>
+        <span className={styles.createdAt}>{formatDueDate(todo.dueDate)}</span>
+      </td>
+      <td>
+        <div className={styles.fileActions}>
+          <button type="button" className={styles.fileActionButton} onClick={() => onEditTodo(todo)} title="编辑任务">
+            <EditFileIcon />
+          </button>
+          <button
+            type="button"
+            className={`${styles.fileActionButton} ${styles.fileDeleteButton}`}
+            onClick={() => onDeleteTodo(todo.id)}
+            title="删除任务"
+          >
+            <TrashFileIcon />
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function TaskExplorer({
+  branches,
+  todos,
+  onCreateTodo,
+  onDeleteTodo,
+  onEditTodo,
+  onUpdateTodoDueDate,
+  onUpdateTodoStatus,
+}: TaskExplorerProps) {
+  const activeTasks = todos.filter((todo) => todo.status !== 'done').length;
+  const overdueTasks = todos.filter((todo) => todo.dueDate && todo.dueDate < TODAY_STR && todo.status !== 'done').length;
+  const doneTasks = todos.filter((todo) => todo.status === 'done').length;
+  const devTasks = todos.filter((todo) => todo.category === 'dev').length;
+
+  return (
+    <div className={styles.explorerShell}>
+      <aside className={styles.explorerSidebar} aria-label="任务文件夹">
+        <div className={styles.folderGroup}>
+          <h2>快速访问</h2>
+          <div className={styles.folderItem}>
+            <span>📁 全部任务</span>
+            <strong>{todos.length}</strong>
+          </div>
+          <div className={styles.folderItem}>
+            <span>⚡ 进行中</span>
+            <strong>{activeTasks}</strong>
+          </div>
+          <div className={styles.folderItem}>
+            <span>⏰ 已逾期</span>
+            <strong>{overdueTasks}</strong>
+          </div>
+          <div className={styles.folderItem}>
+            <span>✅ 已完成</span>
+            <strong>{doneTasks}</strong>
+          </div>
+        </div>
+
+        <div className={styles.folderGroup}>
+          <h2>分类目录</h2>
+          {(Object.keys(categoryLabelMap) as Todo['category'][]).map((categoryKey) => (
+            <div key={categoryKey} className={styles.folderItem}>
+              <span>{getTaskFolderLabel(categoryKey)}</span>
+              <strong>{todos.filter((todo) => todo.category === categoryKey).length}</strong>
+            </div>
+          ))}
+        </div>
+
+        <div className={styles.storageCard}>
+          <span>开发任务</span>
+          <strong>{devTasks}</strong>
+          <p>关联 Git 分支的事项会在列表里显示分支名称。</p>
+        </div>
+      </aside>
+
+      <section className={styles.explorerMain} aria-label="任务文件列表">
+        <div className={styles.explorerMainHeader}>
+          <div>
+            <h2>全部任务</h2>
+            <p>{todos.length} 个项目，按文件列表方式查看和编辑。</p>
+          </div>
+          <button type="button" className={styles.createButton} onClick={onCreateTodo}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            新建任务
+          </button>
+        </div>
+
+        <div className={styles.fileTableWrap}>
+          <table className={styles.fileTable}>
+            <thead>
+              <tr>
+                <th>名称</th>
+                <th>位置</th>
+                <th>状态</th>
+                <th>优先级</th>
+                <th>截止日期</th>
+                <th>Git 分支</th>
+                <th>时间</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {todos.map((todo) => (
+                <TaskFileRow
+                  key={todo.id}
+                  branchName={getBranchName(todo, branches)}
+                  todo={todo}
+                  onDeleteTodo={onDeleteTodo}
+                  onEditTodo={onEditTodo}
+                  onUpdateTodoDueDate={onUpdateTodoDueDate}
+                  onUpdateTodoStatus={onUpdateTodoStatus}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {todos.length === 0 && (
+          <div className={styles.emptyGridPlaceholder}>
+            <h3>没有找到任务</h3>
+            <p>请调整筛选条件，或新建一个任务。</p>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
 
 function CompactTaskCard({
   todo,
@@ -207,68 +454,6 @@ function BranchLink({ linkedBranch }: BranchLinkProps) {
         <span className={`${styles.envPill} ${linkedBranch.qa ? styles['envPillActive-qa'] : ''}`} title="已发布到 QA">Q</span>
         <span className={`${styles.envPill} ${linkedBranch.uat ? styles['envPillActive-uat'] : ''}`} title="已发布到 UAT">U</span>
         <span className={`${styles.envPill} ${linkedBranch.pro ? styles['envPillActive-pro'] : ''}`} title="已发布到 PROD">P</span>
-      </div>
-    </div>
-  );
-}
-
-interface RescheduleBarProps {
-  todo: Todo;
-  onUpdateTodoDueDate: (todoId: string, dueDate: string) => void;
-}
-
-function RescheduleBar({ todo, onUpdateTodoDueDate }: RescheduleBarProps) {
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.value) {
-      onUpdateTodoDueDate(todo.id, e.target.value);
-    }
-  };
-
-  const handleSetToday = () => {
-    onUpdateTodoDueDate(todo.id, TODAY_STR);
-  };
-
-  const handleDeferOneDay = () => {
-    const nextDate = addDays(todo.dueDate || TODAY_STR, 1);
-    onUpdateTodoDueDate(todo.id, nextDate);
-  };
-
-  return (
-    <div className={styles.rescheduleBar} onClick={(e) => e.stopPropagation()}>
-      <div className={styles.dateSelectorWrapper}>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.calendarIcon}>
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-          <line x1="16" y1="2" x2="16" y2="6" />
-          <line x1="8" y1="2" x2="8" y2="6" />
-          <line x1="3" y1="10" x2="21" y2="10" />
-        </svg>
-        <input
-          type="date"
-          value={todo.dueDate || ''}
-          onChange={handleDateChange}
-          className={styles.dateInput}
-          title="修改截止日期"
-        />
-      </div>
-      <div className={styles.quickDates}>
-        {todo.dueDate !== TODAY_STR && (
-          <button 
-            type="button"
-            onClick={handleSetToday}
-            className={styles.quickDateBtn}
-            title="设为今天"
-          >
-            今天
-          </button>
-        )}
-        <button 
-          type="button"
-          onClick={handleDeferOneDay}
-          className={styles.quickDateBtn}
-          title="顺延 1 天"
-        >
-          +1d
-        </button>
       </div>
     </div>
   );
@@ -423,7 +608,7 @@ export default function TodoSection({
   onDeleteTodo,
 }: TodoSectionProps) {
   // Navigation & View State
-  const [viewMode, setViewMode] = useState<'week' | 'timeline' | 'grid'>('week');
+  const [viewMode, setViewMode] = useState<'files' | 'week' | 'timeline'>('files');
   const [anchorDate, setAnchorDate] = useState<Date>(() => parseLocalDate(TODAY_STR));
   const [cardMode, setCardMode] = useState<'detailed' | 'compact'>('detailed');
 
@@ -586,7 +771,6 @@ export default function TodoSection({
   const startOfWeekDate = weekDays[0];
   const endOfWeekDate = weekDays[6];
   const startOfWeekStr = formatDateString(startOfWeekDate);
-  const endOfWeekStr = formatDateString(endOfWeekDate);
 
   const formatRangeLabel = (start: Date, end: Date) => {
     const opt: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
@@ -692,6 +876,13 @@ export default function TodoSection({
         <div className={styles.viewToggleGroup}>
           <button 
             type="button"
+            className={`${styles.viewToggleBtn} ${viewMode === 'files' ? styles.activeView : ''}`}
+            onClick={() => setViewMode('files')}
+          >
+            🗂️ 文件列表
+          </button>
+          <button 
+            type="button"
             className={`${styles.viewToggleBtn} ${viewMode === 'week' ? styles.activeView : ''}`}
             onClick={() => setViewMode('week')}
           >
@@ -703,13 +894,6 @@ export default function TodoSection({
             onClick={() => setViewMode('timeline')}
           >
             ⏱️ 时间线
-          </button>
-          <button 
-            type="button"
-            className={`${styles.viewToggleBtn} ${viewMode === 'grid' ? styles.activeView : ''}`}
-            onClick={() => setViewMode('grid')}
-          >
-            🎛️ 全部任务
           </button>
         </div>
 
@@ -804,7 +988,20 @@ export default function TodoSection({
 
       {/* Main Board Content Area */}
       
-      {/* 1. WEEKLY COLUMNS VIEW (DAILY PLANNER) */}
+      {/* 1. FILE EXPLORER VIEW */}
+      {viewMode === 'files' && (
+        <TaskExplorer
+          branches={branches}
+          todos={filteredTodos}
+          onCreateTodo={() => openCreateModal(TODAY_STR)}
+          onDeleteTodo={onDeleteTodo}
+          onEditTodo={openEditModal}
+          onUpdateTodoDueDate={onUpdateTodoDueDate}
+          onUpdateTodoStatus={onUpdateTodoStatus}
+        />
+      )}
+
+      {/* 2. WEEKLY COLUMNS VIEW (DAILY PLANNER) */}
       {viewMode === 'week' && (
         <div className={styles.weeklyContainer}>
           <div className={styles.weeklyGrid}>
@@ -906,7 +1103,7 @@ export default function TodoSection({
         </div>
       )}
 
-      {/* 2. VERTICAL TIMELINE VIEW */}
+      {/* 3. VERTICAL TIMELINE VIEW */}
       {viewMode === 'timeline' && (
         <div className={styles.timelineContainer}>
           <div className={styles.timelineList}>
@@ -979,30 +1176,6 @@ export default function TodoSection({
               </div>
             )}
           </div>
-        </div>
-      )}
-
-      {/* 3. STANDARD GRID VIEW */}
-      {viewMode === 'grid' && (
-        <div className={styles.boardGrid}>
-          {filteredTodos.map((todo) => (
-            <TaskCard
-              key={todo.id}
-              todo={todo}
-              branches={branches}
-              onUpdateTodoStatus={onUpdateTodoStatus}
-              onUpdateTodoDueDate={onUpdateTodoDueDate}
-              onDeleteTodo={onDeleteTodo}
-              onEditTodo={openEditModal}
-              cardMode={cardMode}
-            />
-          ))}
-          {filteredTodos.length === 0 && (
-            <div className={styles.emptyGridPlaceholder}>
-              <h3>没有找到任务</h3>
-              <p>请调整筛选条件，或新建一个任务。</p>
-            </div>
-          )}
         </div>
       )}
 

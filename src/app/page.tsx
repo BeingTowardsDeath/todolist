@@ -6,6 +6,7 @@ import AuthPanel from '@/components/AuthPanel';
 import BranchSection from '@/components/BranchSection';
 import Console from '@/components/Console';
 import { IdeaSection } from '@/components/IdeaSection';
+import { NoteSection } from '@/components/NoteSection';
 import PasswordDialog from '@/components/PasswordDialog';
 import Sidebar from '@/components/Sidebar';
 import TodoSection from '@/components/TodoSection';
@@ -26,6 +27,7 @@ export default function Page() {
     todos,
     branches,
     ideas,
+    notes,
     logs,
     loading,
     error,
@@ -37,6 +39,9 @@ export default function Page() {
     handleAddIdea,
     handleUpdateIdea,
     handleDeleteIdea,
+    handleAddNote,
+    handleUpdateNote,
+    handleDeleteNote,
     handleAddBranch,
     handleImportBranchFile,
     handleUpdateBranchEnv,
@@ -79,6 +84,8 @@ export default function Page() {
   const activeBranches = branches.length;
   const deployedPro = branches.filter((b) => b.pro).length;
   const openIdeas = ideas.filter((idea) => idea.status === 'open').length;
+  const totalNotes = notes.length;
+  const pinnedNotes = notes.filter((note) => note.isPinned).length;
 
   if (authLoading || (user && loading)) {
     return (
@@ -182,6 +189,8 @@ export default function Page() {
             totalTasks,
             completedTasks,
             openIdeas,
+            totalNotes,
+            pinnedNotes,
             activeBranches,
             deployedPro,
           }}
@@ -206,6 +215,15 @@ export default function Page() {
               onAddIdea={handleAddIdea}
               onUpdateIdea={handleUpdateIdea}
               onDeleteIdea={handleDeleteIdea}
+            />
+          )}
+
+          {activeTab === 'notes' && (
+            <NoteSection
+              notes={notes}
+              onAddNote={handleAddNote}
+              onUpdateNote={handleUpdateNote}
+              onDeleteNote={handleDeleteNote}
             />
           )}
           

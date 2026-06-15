@@ -72,6 +72,31 @@ export interface IdeaUpdateInput {
   status?: Idea['status'];
 }
 
+export type NoteColor = 'default' | 'blue' | 'green' | 'yellow' | 'rose';
+
+export interface Note {
+  id: string;
+  title: string;
+  content: string;
+  color: NoteColor;
+  isPinned: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NoteInput {
+  title: string;
+  content: string;
+  color: NoteColor;
+}
+
+export interface NoteUpdateInput {
+  title?: string;
+  content?: string;
+  color?: NoteColor;
+  isPinned?: boolean;
+}
+
 export interface ConsoleLog {
   id: string;
   timestamp: string;
@@ -84,11 +109,12 @@ export interface User {
   username: string;
 }
 
-export type AppTab = 'tasks' | 'ideas' | 'branches' | 'terminal';
+export type AppTab = 'tasks' | 'ideas' | 'notes' | 'branches' | 'terminal';
 
 export interface WorkspaceSnapshot {
   todos: Todo[];
   branches: Branch[];
   ideas: Idea[];
+  notes: Note[];
   logs: ConsoleLog[];
 }

@@ -2,17 +2,18 @@ import type {
   Branch as BranchModel,
   Todo as TodoModel,
   Idea as IdeaModel,
+  Note as NoteModel,
   ConsoleLog as ConsoleLogModel,
   BranchHistoryItem as BranchHistoryItemModel,
 } from '@prisma/client';
 import { prisma } from './prisma';
-import type { Branch, Todo, Idea, ConsoleLog, BranchHistoryItem, WorkspaceSnapshot } from '@/types';
+import type { Branch, Todo, Idea, Note, ConsoleLog, BranchHistoryItem, WorkspaceSnapshot } from '@/types';
 
 // Snapshot shape returned to the client. Every write endpoint returns this so the
 // existing useGitTodoState hook keeps working without changes.
 export type DbSnapshot = WorkspaceSnapshot;
 
-type BranchWithHistory = BranchModel & { history: BranchHistoryItemModel[] };
+type BranchWithHistory = BranchModel & { history: BranchHistoryItemModel[]; pinned?: boolean };
 
 // --- Shared utilities (previously duplicated across every route) ---
 
@@ -64,7 +65,7 @@ export const toBranch = (branch: BranchWithHistory): Branch => ({
   qa: branch.qa,
   uat: branch.uat,
   pro: branch.pro,
-  pinned: (branch as any).pinned ?? false,
+  pinned: branch.pinned ?? false,
   // Values are constrained to the unions in src/types at the application layer.
   status: branch.status as Branch['status'],
   type: branch.type ? (branch.type as Branch['type']) : undefined,
@@ -92,6 +93,16 @@ export const toIdea = (idea: IdeaModel): Idea => ({
   updatedAt: idea.updatedAt,
 });
 
+export const toNote = (note: NoteModel): Note => ({
+  id: note.id,
+  title: note.title,
+  content: note.content,
+  color: note.color as Note['color'],
+  isPinned: note.isPinned,
+  createdAt: note.createdAt,
+  updatedAt: note.updatedAt,
+});
+
 export const toLog = (log: ConsoleLogModel): ConsoleLog => ({
   id: log.id,
   timestamp: log.timestamp,
@@ -103,7 +114,7 @@ export const toLog = (log: ConsoleLogModel): ConsoleLog => ({
 // todos: newest first (seq desc); branches/logs/history: creation order (seq asc).
 
 export async function getSnapshot(userId: string): Promise<DbSnapshot> {
-  const [branches, todos, ideas, logs] = await Promise.all([
+  const [branches, todos, ideas, notes, logs] = await Promise.all([
     prisma.branch.findMany({
       where: { userId },
       orderBy: { seq: 'asc' },
@@ -111,6 +122,10 @@ export async function getSnapshot(userId: string): Promise<DbSnapshot> {
     }),
     prisma.todo.findMany({ where: { userId }, orderBy: { seq: 'desc' } }),
     prisma.idea.findMany({ where: { userId }, orderBy: { seq: 'desc' } }),
+    prisma.note.findMany({
+      where: { userId },
+      orderBy: [{ isPinned: 'desc' }, { updatedAt: 'desc' }, { seq: 'desc' }],
+    }),
     prisma.consoleLog.findMany({ where: { userId }, orderBy: { seq: 'asc' } }),
   ]);
 
@@ -118,6 +133,7 @@ export async function getSnapshot(userId: string): Promise<DbSnapshot> {
     todos: todos.map(toTodo),
     branches: branches.map(toBranch),
     ideas: ideas.map(toIdea),
+    notes: notes.map(toNote),
     logs: logs.map(toLog),
   };
 }
