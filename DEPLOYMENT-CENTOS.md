@@ -339,7 +339,7 @@ sudo -iu deploy
 cd /var/www/todolist
 
 git pull
-npm ci
+npm ci --include=dev
 npx prisma generate
 npx prisma migrate deploy
 npm run build
@@ -349,7 +349,162 @@ pm2 logs todolist
 
 如果更新包含数据库结构变更，建议先备份数据库。
 
-## 14. 数据库备份与恢复
+如果二次部署前需要明确停止当前运行的程序，可以先执行：
+
+```bash
+pm2 stop todolist
+```
+
+普通更新通常不需要先停止程序，直接在构建完成后执行 `pm2 restart todolist --update-env` 即可。只有在数据库恢复、端口冲突排查、旧进程异常或需要临时下线服务时，才建议先手动停止。
+
+## 14. 自动化部署
+
+推荐使用 GitHub Actions 触发 VPS 上的部署脚本。首次部署仍然按前面的步骤手动完成；自动化部署只负责后续发布新版本。
+
+### 14.1 创建服务器部署脚本
+
+用 `deploy` 用户在服务器创建部署脚本：
+
+```bash
+sudo -iu deploy
+cd /var/www/todolist
+vi deploy.sh
+```
+
+写入：
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd /var/www/todolist
+
+git fetch origin
+git reset --hard origin/main
+
+npm ci
+npx prisma generate
+npx prisma migrate deploy
+npm run build
+
+pm2 restart todolist --update-env || pm2 start npm --name todolist --cwd /var/www/todolist -- run start
+pm2 save
+```
+
+授权执行：
+
+```bash
+chmod +x /var/www/todolist/deploy.sh
+```
+
+如果你的主分支不是 `main`，把脚本中的 `origin/main` 改成实际分支，例如 `origin/master`。
+
+### 14.2 配置服务器拉取代码权限
+
+如果仓库是公开仓库，服务器通常可以直接 `git fetch`。
+
+如果仓库是私有仓库，建议给 `deploy` 用户配置 GitHub Deploy Key：
+
+```bash
+sudo -iu deploy
+ssh-keygen -t ed25519 -C "todolist-vps-deploy"
+cat ~/.ssh/id_ed25519.pub
+```
+
+把输出的公钥添加到 GitHub 仓库：
+
+```text
+Settings -> Deploy keys -> Add deploy key
+```
+
+只需要勾选读权限，不需要勾选写权限。然后在服务器测试：
+
+```bash
+cd /var/www/todolist
+git fetch origin
+```
+
+### 14.3 配置 GitHub Secrets
+
+在 GitHub 仓库中打开：
+
+```text
+Settings -> Secrets and variables -> Actions -> New repository secret
+```
+
+添加以下 Secrets：
+
+```text
+VPS_HOST=你的服务器公网IP
+VPS_USER=deploy
+VPS_PORT=22
+VPS_SSH_KEY=deploy 用户 SSH 私钥内容
+```
+
+`VPS_SSH_KEY` 应填写 GitHub Actions 用来登录服务器的私钥。建议单独生成一组部署专用 SSH key，不要使用你个人常用私钥。
+
+### 14.4 添加 GitHub Actions 工作流
+
+在本地项目中新建 `.github/workflows/deploy.yml`：
+
+```yaml
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            /var/www/todolist/deploy.sh
+```
+
+如果你的主分支不是 `main`，同步修改 `branches`。
+
+提交并推送后，每次推送到 `main` 都会自动部署：
+
+```bash
+git add .github/workflows/deploy.yml
+git commit -m "Add automated deployment workflow"
+git push origin main
+```
+
+### 14.5 自动化部署后的检查
+
+在 GitHub Actions 页面确认工作流执行成功，然后在服务器检查：
+
+```bash
+pm2 status
+pm2 logs todolist
+curl -I http://127.0.0.1:3001
+```
+
+浏览器访问：
+
+```text
+http://公网IP
+```
+
+注意：
+
+- 生产环境自动部署只执行 `npx prisma migrate deploy`，不要自动执行 `npx prisma db seed`。
+- `.env` 只保存在服务器，不要提交到 Git 仓库。
+- 如果本次发布包含数据库结构变更，建议先按下一节备份数据库。
+- 如果 GitHub Actions 能登录服务器但部署失败，优先查看 Actions 日志和 `pm2 logs todolist`。
+
+## 15. 数据库备份与恢复
 
 创建备份目录：
 
@@ -393,7 +548,7 @@ PGPASSWORD='数据库密码' pg_restore \
 pm2 start todolist
 ```
 
-## 15. 常见问题
+## 16. 常见问题
 
 ### 502 Bad Gateway
 
@@ -476,4 +631,3 @@ http://公网IP
 - `package.json` 的 `start` 脚本
 - Nginx 中的 `proxy_pass http://127.0.0.1:3001`
 - PM2 重启应用
-

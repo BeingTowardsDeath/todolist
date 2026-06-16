@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { FormEvent } from 'react';
+import type { FormEvent, KeyboardEvent } from 'react';
 
 import type { Note, NoteColor, NoteInput, NoteUpdateInput } from '@/types';
 
@@ -150,8 +150,22 @@ function NoteEditor({
   onSubmit,
   onTitleChange,
 }: NoteEditorProps) {
+  const handleEditorKeyDown = (event: KeyboardEvent<HTMLFormElement>) => {
+    const isSaveShortcut = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's';
+
+    if (!isSaveShortcut) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (!isSubmitting && !event.repeat) {
+      event.currentTarget.requestSubmit();
+    }
+  };
+
   return (
-    <form className={styles.editorPanel} onSubmit={onSubmit}>
+    <form className={styles.editorPanel} onKeyDown={handleEditorKeyDown} onSubmit={onSubmit}>
       <div className={styles.editorToolbar}>
         <div className={styles.editorState}>
           <span className={joinClassNames(styles.editorFileDot, styles[`file-${color}`])} />
