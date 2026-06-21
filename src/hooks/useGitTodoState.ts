@@ -396,6 +396,12 @@ export function useGitTodoState(enabled = true) {
     oldValue: string,
     newValue: string
   ) => {
+    setBranches((currentBranches) =>
+      currentBranches.map((branch) =>
+        branch.id === branchId ? { ...branch, [field]: newValue } : branch
+      )
+    );
+
     try {
       const res = await fetch(`/api/branches/${branchId}`, {
         method: 'PUT',

@@ -1,11 +1,22 @@
 'use client';
 
 import type { ChangeEvent, FormEvent } from 'react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { Branch, BranchImportSummary } from '@/types';
 
 import styles from './BranchSection.module.css';
+
+type EditableBranchField = 'name' | 'impact' | 'base';
+
+interface InlineBranchTextareaProps {
+  ariaLabel: string;
+  className: string;
+  rowsChars?: number;
+  rows?: number;
+  value: string;
+  onCommit: (nextValue: string) => void;
+}
 
 interface BranchSectionProps {
   branches: Branch[];
@@ -23,7 +34,7 @@ interface BranchSectionProps {
   onDeleteBranch: (branchId: string) => void;
   onLogBranchEdit: (
     branchId: string,
-    field: 'name' | 'impact' | 'base',
+    field: EditableBranchField,
     oldValue: string,
     newValue: string
   ) => void;
@@ -56,6 +67,56 @@ const branchImportTemplateHref = '/templates/branch-upload-template.xlsx';
 const getErrorMessage = (error: unknown, fallback: string): string =>
   error instanceof Error ? error.message : fallback;
 
+const getBranchFieldValue = (branch: Branch, field: EditableBranchField): string => branch[field] ?? '';
+
+const normalizeBaseBranchValue = (value: string): string => value.replace(/[\r\n]+/g, ' ').trim();
+
+function InlineBranchTextarea({
+  ariaLabel,
+  className,
+  rows,
+  rowsChars = 30,
+  value,
+  onCommit,
+}: InlineBranchTextareaProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [draftValue, setDraftValue] = useState(value);
+  const displayValue = isEditing ? draftValue : value;
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // Auto-resize height of textarea to match content exactly
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    }
+  }, [displayValue]);
+
+  const handleFocus = () => {
+    setDraftValue(value);
+    setIsEditing(true);
+  };
+
+  const handleBlur = () => {
+    setIsEditing(false);
+    onCommit(draftValue);
+  };
+
+  return (
+    <textarea
+      ref={textareaRef}
+      aria-label={ariaLabel}
+      value={displayValue}
+      onChange={(event) => setDraftValue(event.target.value)}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+      className={className}
+      rows={rows ?? getRows(displayValue, rowsChars)}
+    />
+  );
+}
+
 export default function BranchSection({
   branches,
   onAddBranch,
@@ -81,13 +142,6 @@ export default function BranchSection({
   const [pendingProUpdate, setPendingProUpdate] = useState<{
     branchId: string;
     value: boolean;
-  } | null>(null);
-  
-  // State to track original value when editing text areas inline (to log to history onBlur)
-  const [activeEdit, setActiveEdit] = useState<{
-    branchId: string;
-    field: 'name' | 'impact' | 'base';
-    originalValue: string;
   } | null>(null);
 
   // State to track branch history being viewed
@@ -159,6 +213,15 @@ export default function BranchSection({
     setPendingProUpdate({ branchId, value: checked });
   };
 
+  const commitInlineEdit = (branch: Branch, field: EditableBranchField, nextValue: string) => {
+    const oldValue = getBranchFieldValue(branch, field).trim();
+    const newValue = field === 'base' ? normalizeBaseBranchValue(nextValue) : nextValue.trim();
+
+    if (oldValue !== newValue) {
+      onLogBranchEdit(branch.id, field, oldValue, newValue);
+    }
+  };
+
   // Filter branches
   const filteredBranches = branches.filter((branch) => {
     const matchesSearch = 
@@ -203,7 +266,7 @@ export default function BranchSection({
             <th>分支</th>
             <th style={{ width: '100px' }}>类型</th>
             <th>内容 / 影响</th>
-            <th>基础分支</th>
+            <th className={styles.baseHeader}>基础分支</th>
             <th style={{ textAlign: 'center', width: '70px' }}>dev</th>
             <th style={{ textAlign: 'center', width: '70px' }}>qa</th>
             <th style={{ textAlign: 'center', width: '70px' }}>uat</th>
@@ -226,22 +289,12 @@ export default function BranchSection({
                       <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
                     </svg>
                   </button>
-                  <textarea 
-                    value={branch.name} 
-                    onChange={(e) => onUpdateBranch(branch.id, { name: e.target.value })} 
-                    onFocus={() => setActiveEdit({ branchId: branch.id, field: 'name', originalValue: branch.name })}
-                    onBlur={() => {
-                      if (activeEdit && activeEdit.branchId === branch.id && activeEdit.field === 'name') {
-                        const oldVal = activeEdit.originalValue.trim();
-                        const newVal = branch.name.trim();
-                        if (oldVal !== newVal) {
-                          onLogBranchEdit(branch.id, 'name', oldVal, newVal);
-                        }
-                      }
-                      setActiveEdit(null);
-                    }}
-                    className={styles.editableTextarea + ' ' + styles.boldTextarea} 
-                    rows={getRows(branch.name, 22)}
+                  <InlineBranchTextarea
+                    ariaLabel="编辑分支名称"
+                    value={branch.name}
+                    onCommit={(nextValue) => commitInlineEdit(branch, 'name', nextValue)}
+                    className={styles.editableTextarea + ' ' + styles.boldTextarea}
+                    rowsChars={22}
                   />
                 </div>
               </td>
@@ -258,42 +311,21 @@ export default function BranchSection({
                 </select>
               </td>
               <td className={styles.impactCell} title="点击编辑">
-                <textarea
+                <InlineBranchTextarea
+                  ariaLabel="编辑分支内容或影响"
                   value={branch.impact || ''}
-                  onChange={(e) => onUpdateBranch(branch.id, { impact: e.target.value })}
-                  onFocus={() => setActiveEdit({ branchId: branch.id, field: 'impact', originalValue: branch.impact || '' })}
-                  onBlur={() => {
-                    if (activeEdit && activeEdit.branchId === branch.id && activeEdit.field === 'impact') {
-                      const oldVal = activeEdit.originalValue.trim();
-                      const newVal = (branch.impact || '').trim();
-                      if (oldVal !== newVal) {
-                        onLogBranchEdit(branch.id, 'impact', oldVal, newVal);
-                      }
-                    }
-                    setActiveEdit(null);
-                  }}
+                  onCommit={(nextValue) => commitInlineEdit(branch, 'impact', nextValue)}
                   className={styles.editableTextarea}
-                  rows={getRows(branch.impact || '', 30)}
+                  rowsChars={30}
                 />
               </td>
-              <td className={styles.baseCell}>
-                <textarea 
-                  value={branch.base} 
-                  onChange={(e) => onUpdateBranch(branch.id, { base: e.target.value })} 
-                  onFocus={() => setActiveEdit({ branchId: branch.id, field: 'base', originalValue: branch.base })}
-                  onBlur={() => {
-                    if (activeEdit && activeEdit.branchId === branch.id && activeEdit.field === 'base') {
-                      const oldVal = activeEdit.originalValue.trim();
-                      const newVal = branch.base.trim();
-                      if (oldVal !== newVal) {
-                        onLogBranchEdit(branch.id, 'base', oldVal, newVal);
-                      }
-                    }
-                    setActiveEdit(null);
-                  }}
-                  className={styles.editableTextarea + ' ' + styles.monoTextarea} 
-                  rows={getRows(branch.base, 10)}
-                  style={{ width: '80px' }}
+              <td className={styles.baseCell} title={normalizeBaseBranchValue(branch.base)}>
+                <InlineBranchTextarea
+                  ariaLabel="编辑基础分支"
+                  value={normalizeBaseBranchValue(branch.base)}
+                  onCommit={(nextValue) => commitInlineEdit(branch, 'base', nextValue)}
+                  className={styles.editableTextarea + ' ' + styles.monoTextarea + ' ' + styles.baseTextarea}
+                  rowsChars={22}
                 />
               </td>
               

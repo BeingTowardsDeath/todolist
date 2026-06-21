@@ -187,6 +187,8 @@ export async function PUT(
             details: `从 "${oldValue}" 修改为 "${newValue}"`,
           },
         });
+
+        await tx.branch.update({ where: { id }, data: { [field]: newValue } });
       } else if (updates) {
         if (updates.type && updates.type !== branch.type) {
           await tx.branchHistoryItem.create({
