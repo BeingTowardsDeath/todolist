@@ -3,6 +3,7 @@
 import type { ChangeEvent, FormEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
+import { downloadTextFile } from '@/lib/textExport';
 import type { Branch, BranchImportSummary } from '@/types';
 
 import styles from './BranchSection.module.css';
@@ -64,12 +65,88 @@ interface ImportFeedback {
 
 const branchImportTemplateHref = '/templates/branch-upload-template.xlsx';
 
+const branchEnvironmentKeys = ['dev', 'qa', 'uat', 'pro'] as const;
+
 const getErrorMessage = (error: unknown, fallback: string): string =>
   error instanceof Error ? error.message : fallback;
 
 const getBranchFieldValue = (branch: Branch, field: EditableBranchField): string => branch[field] ?? '';
 
 const normalizeBaseBranchValue = (value: string): string => value.replace(/[\r\n]+/g, ' ').trim();
+
+const getDateStamp = (): string => new Date().toISOString().slice(0, 10);
+
+const getEnvironmentMark = (value: boolean): string => value ? '[x]' : '[ ]';
+
+const formatBranchHistoryDate = (value: string): string => {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString('zh-CN', { hour12: false });
+};
+
+const buildBranchExportLine = (branch: Branch, index: number): string => {
+  const environments = branchEnvironmentKeys
+    .map((environment) => `${environment.toUpperCase()} ${getEnvironmentMark(branch[environment])}`)
+    .join(' | ');
+
+  return [
+    `${index + 1}. ${branch.name}`,
+    `   类型：${branch.type ? branchTypeLabelMap[branch.type] : '未设置'}`,
+    `   状态：${branch.status}${branch.pinned ? ' / 置顶' : ''}`,
+    `   基础分支：${normalizeBaseBranchValue(branch.base) || '-'}`,
+    `   矩阵：${environments}`,
+    `   内容 / 影响：${branch.impact || '-'}`,
+  ].join('\n');
+};
+
+const buildBranchGroupExport = (title: string, branches: Branch[]): string => {
+  if (branches.length === 0) {
+    return [`## ${title}`, '', '暂无分支'].join('\n');
+  }
+
+  return [
+    `## ${title}（${branches.length}）`,
+    '',
+    branches.map(buildBranchExportLine).join('\n\n'),
+  ].join('\n');
+};
+
+const buildBranchMatrixExportContent = ({
+  activeBranches,
+  completedBranches,
+  envFilter,
+  search,
+  typeFilter,
+}: {
+  activeBranches: Branch[];
+  completedBranches: Branch[];
+  envFilter: string;
+  search: string;
+  typeFilter: string;
+}): string => {
+  const exportedAt = formatBranchHistoryDate(new Date().toISOString());
+  const filterSummary = [
+    `搜索：${search.trim() || '全部'}`,
+    `环境：${envFilter}`,
+    `类型：${typeFilter === 'all' ? '全部' : branchTypeLabelMap[typeFilter as NonNullable<Branch['type']>]}`,
+  ];
+
+  return [
+    '# 分支矩阵导出',
+    '',
+    `导出时间：${exportedAt}`,
+    `筛选条件：${filterSummary.join(' / ')}`,
+    `分支数量：${activeBranches.length + completedBranches.length}`,
+    '',
+    buildBranchGroupExport('活跃分支', activeBranches),
+    '',
+    buildBranchGroupExport('已完成分支', completedBranches),
+  ].join('\n');
+};
 
 function InlineBranchTextarea({
   ariaLabel,
@@ -207,6 +284,18 @@ export default function BranchSection({
       setIsImporting(false);
       event.target.value = '';
     }
+  };
+
+  const handleExportBranches = () => {
+    const content = buildBranchMatrixExportContent({
+      activeBranches,
+      completedBranches,
+      envFilter,
+      search,
+      typeFilter,
+    });
+
+    downloadTextFile(`branch-matrix-${getDateStamp()}.txt`, content);
   };
 
   const handleProChange = (branchId: string, checked: boolean) => {
@@ -488,6 +577,20 @@ export default function BranchSection({
             </svg>
             下载模板
           </a>
+          <button
+            type="button"
+            className={styles.importButton}
+            onClick={handleExportBranches}
+            disabled={filteredBranches.length === 0}
+            title="导出当前分支矩阵为 TXT"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            导出
+          </button>
           <button
             type="button"
             className={styles.importButton}

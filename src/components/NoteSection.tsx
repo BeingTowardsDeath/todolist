@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import type { FormEvent, KeyboardEvent } from 'react';
 
+import { downloadTextFile, sanitizeFilenamePart } from '@/lib/textExport';
 import type { Note, NoteColor, NoteInput, NoteUpdateInput } from '@/types';
 
 import styles from './NoteSection.module.css';
@@ -72,6 +73,41 @@ const getPreview = (note: Note): string => {
   return source || '空白文档';
 };
 
+const getDateStamp = (): string => new Date().toISOString().slice(0, 10);
+
+const formatNoteExportDate = (value: string): string => {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString('zh-CN', { hour12: false });
+};
+
+const buildNoteExportBlock = (note: Note, index: number, total: number): string => [
+  total > 1 ? `# ${index + 1}. ${note.title || '未命名文档'}` : `# ${note.title || '未命名文档'}`,
+  '',
+  `颜色：${noteColorLabelMap[note.color]}`,
+  `置顶：${note.isPinned ? '是' : '否'}`,
+  `创建时间：${formatNoteExportDate(note.createdAt)}`,
+  `更新时间：${formatNoteExportDate(note.updatedAt)}`,
+  '',
+  note.content.trim() || '(空白内容)',
+].join('\n');
+
+const buildNotesExportContent = (notes: Note[]): string => notes
+  .map((note, index) => buildNoteExportBlock(note, index, notes.length))
+  .join('\n\n---\n\n');
+
+const getNotesExportFilename = (notes: Note[]): string => {
+  if (notes.length === 1) {
+    return `${sanitizeFilenamePart(notes[0].title, 'untitled-note')}-${getDateStamp()}.txt`;
+  }
+
+  return `notes-${getDateStamp()}.txt`;
+};
+
 function AddIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -108,6 +144,16 @@ function DeleteIcon() {
       <polyline points="3 6 5 6 21 6" />
       <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
       <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    </svg>
+  );
+}
+
+function ExportIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
     </svg>
   );
 }
@@ -349,6 +395,17 @@ export function NoteSection({ notes, onAddNote, onUpdateNote, onDeleteNote }: No
   const emptyMessage = notes.length === 0
     ? '还没有文档。点击新建后在右侧编辑器里记录内容。'
     : '没有匹配的文档。请调整搜索或筛选条件。';
+  const exportNoteCount = selectedNote ? 1 : filteredNotes.length;
+
+  const handleExportNotes = () => {
+    const exportNotes = selectedNote ? [selectedNote] : filteredNotes;
+
+    if (exportNotes.length === 0) {
+      return;
+    }
+
+    downloadTextFile(getNotesExportFilename(exportNotes), buildNotesExportContent(exportNotes));
+  };
 
   return (
     <section className={styles.container}>
@@ -357,10 +414,22 @@ export function NoteSection({ notes, onAddNote, onUpdateNote, onDeleteNote }: No
           <h1>文本编辑器</h1>
           <p>以文档方式管理记事，左侧选择文件，右侧直接编辑内容。</p>
         </div>
-        <button type="button" className={styles.createButton} onClick={resetEditor}>
-          <AddIcon />
-          新建文档
-        </button>
+        <div className={styles.headerActions}>
+          <button
+            type="button"
+            className={styles.exportButton}
+            onClick={handleExportNotes}
+            disabled={exportNoteCount === 0}
+            title={selectedNote ? '导出当前文档为 TXT' : '导出当前筛选文档为 TXT'}
+          >
+            <ExportIcon />
+            导出 TXT
+          </button>
+          <button type="button" className={styles.createButton} onClick={resetEditor}>
+            <AddIcon />
+            新建文档
+          </button>
+        </div>
       </header>
 
       <div className={styles.workspace}>
